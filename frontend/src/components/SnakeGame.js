@@ -10,6 +10,7 @@ const GRID_SIZE = 35;
 const CELL_SIZE = 22;
 const GAME_SPEED = 150;
 const FOOD_FRESH_DURATION = 10000; // 10 seconds before food starts rotting
+const FOOD_VANISH_DURATION = 15000; // 15 seconds total before food vanishes (5 seconds after rotting)
 const EXISTENTIAL_DREAD_INTERVAL = 12000; // Reduced from 20000 to 12000 ms to make snake chattier
 const MAX_FOOD_ITEMS = 6; // Maximum number of food items on the board at once (increased from 5)
 
@@ -43,10 +44,23 @@ const GameBoard = styled.div`
   width: ${GRID_SIZE * CELL_SIZE}px;
   height: ${GRID_SIZE * CELL_SIZE}px;
   border: 2px solid #61dafb;
-  background-color: #1e2127;
-  box-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
+  background-color: ${props => {
+    // Gradually change background color based on corruption level
+    if (props.corruptionLevel <= 0) return '#1e2127';
+    if (props.corruptionLevel === 1) return '#271e1e';
+    if (props.corruptionLevel === 2) return '#2a1a1a';
+    if (props.corruptionLevel >= 3) return '#2d1515';
+  }};
+  box-shadow: ${props => {
+    // Gradually change shadow color based on corruption level
+    if (props.corruptionLevel <= 0) return '0 0 20px rgba(97, 218, 251, 0.3)';
+    if (props.corruptionLevel === 1) return '0 0 20px rgba(251, 97, 97, 0.1), 0 0 20px rgba(97, 218, 251, 0.2)';
+    if (props.corruptionLevel === 2) return '0 0 20px rgba(251, 97, 97, 0.2), 0 0 20px rgba(97, 218, 251, 0.1)';
+    if (props.corruptionLevel >= 3) return '0 0 20px rgba(251, 97, 97, 0.3)';
+  }};
   border-radius: 4px;
   overflow: hidden;
+  transition: background-color 2s ease, box-shadow 2s ease;
 `;
 
 const Cell = styled.div`
@@ -127,14 +141,14 @@ const QuoteContainer = styled.div`
   margin-bottom: 1.2rem;
   padding-bottom: 1.2rem;
   border-bottom: 1px solid rgba(97, 218, 251, 0.2);
-  animation: fadeIn 0.5s;
+  animation: fadeInSmooth 0.8s ease;
   background-color: rgba(30, 33, 39, 0.4);
   padding: 1rem;
   border-radius: 6px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+  @keyframes fadeInSmooth {
+    from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
   }
   
@@ -349,6 +363,11 @@ function SnakeGame({ onGameOver }) {
     return Date.now() - food.createdAt > FOOD_FRESH_DURATION;
   }, []);
 
+  // Check if food should vanish (too old)
+  const shouldFoodVanish = useCallback((food) => {
+    return Date.now() - food.createdAt > FOOD_VANISH_DURATION;
+  }, []);
+
   // Generate new food at random position
   const generateFood = useCallback(() => {
     // Try up to 20 times to find a valid position
@@ -448,18 +467,12 @@ function SnakeGame({ onGameOver }) {
     setIdleTime(0);
   }, [recentMessages]);
 
-  // Show a message for rotten food (this still pauses the game)
+  // Show a message for rotten food (no longer pauses the game)
   const showMessage = useCallback((text, author = null, color = null, duration = 3000) => {
     setMessage({ text, author, color });
-    setIsPaused(true); // Pause the game when showing a message
     
     setTimeout(() => {
       setMessage(null);
-      // Only unpause if this was the last message (to handle multiple messages)
-      // and the game is not over
-      if (!gameOverRef.current) {
-        setIsPaused(false);
-      }
     }, duration);
   }, []);
 
@@ -797,6 +810,30 @@ function SnakeGame({ onGameOver }) {
     return () => clearInterval(foodGenerationInterval);
   }, [gameOver, isPaused, foodFrequency, addFood]);
 
+  // Periodically check for food that should vanish
+  useEffect(() => {
+    if (gameOver || isPaused) return;
+    
+    const foodVanishInterval = setInterval(() => {
+      // Check for food that should vanish
+      const currentFoods = [...foodsRef.current];
+      let foodsChanged = false;
+      
+      for (let i = currentFoods.length - 1; i >= 0; i--) {
+        if (shouldFoodVanish(currentFoods[i])) {
+          currentFoods.splice(i, 1);
+          foodsChanged = true;
+        }
+      }
+      
+      if (foodsChanged) {
+        setFoods(currentFoods);
+      }
+    }, 1000); // Check every second
+    
+    return () => clearInterval(foodVanishInterval);
+  }, [gameOver, isPaused, shouldFoodVanish]);
+
   // Handle game over
   useEffect(() => {
     if (gameOver) {
@@ -813,7 +850,7 @@ function SnakeGame({ onGameOver }) {
 
   return (
     <GameContainer className="GameContainer">
-      <GameBoard>
+      <GameBoard corruptionLevel={Math.min(rottenFoodEaten, 3)}>
         {/* Render snake */}
         {snake.map((segment, index) => (
           <Cell
