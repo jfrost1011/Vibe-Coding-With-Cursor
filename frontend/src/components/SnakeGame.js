@@ -11,7 +11,7 @@ const CELL_SIZE = 22;
 const GAME_SPEED = 150;
 const FOOD_FRESH_DURATION = 10000; // 10 seconds before food starts rotting
 const EXISTENTIAL_DREAD_INTERVAL = 12000; // Reduced from 20000 to 12000 ms to make snake chattier
-const MAX_FOOD_ITEMS = 5; // Maximum number of food items on the board at once
+const MAX_FOOD_ITEMS = 6; // Maximum number of food items on the board at once (increased from 5)
 
 // Directions
 const DIRECTIONS = {
@@ -351,29 +351,63 @@ function SnakeGame({ onGameOver }) {
 
   // Generate new food at random position
   const generateFood = useCallback(() => {
-    const newFood = {
+    // Try up to 20 times to find a valid position
+    let attempts = 0;
+    const maxAttempts = 20;
+    
+    while (attempts < maxAttempts) {
+      const newFood = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE),
+        createdAt: Date.now(),
+        id: nextFoodIdRef.current
+      };
+      
+      // Make sure food doesn't spawn on snake or other food
+      const isOnSnake = snakeRef.current.some(
+        segment => segment.x === newFood.x && segment.y === newFood.y
+      );
+      
+      const isOnExistingFood = foodsRef.current.some(
+        food => food.x === newFood.x && food.y === newFood.y
+      );
+      
+      if (!isOnSnake && !isOnExistingFood) {
+        setNextFoodId(prev => prev + 1);
+        return newFood;
+      }
+      
+      attempts++;
+    }
+    
+    // If we couldn't find a valid position after max attempts,
+    // try a different approach - find any empty cell
+    for (let x = 0; x < GRID_SIZE; x++) {
+      for (let y = 0; y < GRID_SIZE; y++) {
+        const isOnSnake = snakeRef.current.some(segment => segment.x === x && segment.y === y);
+        const isOnExistingFood = foodsRef.current.some(food => food.x === x && food.y === y);
+        
+        if (!isOnSnake && !isOnExistingFood) {
+          setNextFoodId(prev => prev + 1);
+          return {
+            x,
+            y,
+            createdAt: Date.now(),
+            id: nextFoodIdRef.current
+          };
+        }
+      }
+    }
+    
+    // If the board is completely full (which should be impossible in practice),
+    // return a position anyway
+    setNextFoodId(prev => prev + 1);
+    return {
       x: Math.floor(Math.random() * GRID_SIZE),
       y: Math.floor(Math.random() * GRID_SIZE),
       createdAt: Date.now(),
       id: nextFoodIdRef.current
     };
-    
-    setNextFoodId(prev => prev + 1);
-    
-    // Make sure food doesn't spawn on snake or other food
-    const isOnSnake = snakeRef.current.some(
-      segment => segment.x === newFood.x && segment.y === newFood.y
-    );
-    
-    const isOnExistingFood = foodsRef.current.some(
-      food => food.x === newFood.x && food.y === newFood.y
-    );
-    
-    if (isOnSnake || isOnExistingFood) {
-      return generateFood();
-    }
-    
-    return newFood;
   }, []);
 
   // Add a new food item to the board
@@ -422,6 +456,7 @@ function SnakeGame({ onGameOver }) {
     setTimeout(() => {
       setMessage(null);
       // Only unpause if this was the last message (to handle multiple messages)
+      // and the game is not over
       if (!gameOverRef.current) {
         setIsPaused(false);
       }
@@ -746,13 +781,16 @@ function SnakeGame({ onGameOver }) {
     if (gameOver || isPaused) return;
     
     const foodGenerationInterval = setInterval(() => {
-      // Base chance of adding food
-      const baseChance = 0.1;
-      // Increased chance based on food frequency
-      const frequencyBonus = (foodFrequency - 1) * 0.1;
-      
-      if (Math.random() < baseChance + frequencyBonus) {
-        addFood();
+      // Only add food if we're below the maximum
+      if (foodsRef.current.length < MAX_FOOD_ITEMS) {
+        // Base chance of adding food
+        const baseChance = 0.1;
+        // Increased chance based on food frequency
+        const frequencyBonus = (foodFrequency - 1) * 0.1;
+        
+        if (Math.random() < baseChance + frequencyBonus) {
+          addFood();
+        }
       }
     }, 3000); // Check every 3 seconds
     
@@ -762,11 +800,14 @@ function SnakeGame({ onGameOver }) {
   // Handle game over
   useEffect(() => {
     if (gameOver) {
-      onGameOver({
-        score,
-        totalFoodEaten: foodEaten,
-        rottenFoodEaten,
-      });
+      // Small delay to ensure all state updates are processed
+      setTimeout(() => {
+        onGameOver({
+          score,
+          totalFoodEaten: foodEaten,
+          rottenFoodEaten,
+        });
+      }, 100);
     }
   }, [gameOver, onGameOver, score, foodEaten, rottenFoodEaten]);
 
