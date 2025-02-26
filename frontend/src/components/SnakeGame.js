@@ -681,8 +681,8 @@ function SnakeGame({ onGameOver }) {
               showRottenFoodComment();
               isRottenFoodEaten = true;
               
-              // GAME OVER if rotten food is eaten
-              setGameOver(true);
+              // Remove the game over condition for rotten food
+              // setGameOver(true);
             } else {
               // Add a happy thought when eating fresh food (25% chance)
               if (Math.random() < 0.25) {
