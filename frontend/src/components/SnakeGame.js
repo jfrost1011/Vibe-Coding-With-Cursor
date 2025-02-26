@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000';
+// Use relative path for API in production, fallback to localhost for development
+const API_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:8000';
 
 // Game constants
 const GRID_SIZE = 20;
