@@ -17,7 +17,8 @@ const INITIAL_FOOD_SPAWN_INTERVAL = 3000; // Initial time between food spawns (3
 const MIN_FOOD_SPAWN_INTERVAL = 500; // Minimum time between food spawns (0.5 seconds)
 const FOOD_SPAWN_REDUCTION_FRESH = 50; // ms to reduce spawn time when eating fresh food
 const FOOD_SPAWN_REDUCTION_ROTTEN = 100; // ms to reduce spawn time when eating rotten food (double)
-const SUPER_CORRUPTION_THRESHOLD = 6; // Number of rotten food needed for super corruption (200%)
+const SUPER_CORRUPTION_THRESHOLD = 200; // Percentage corruption for super corruption state (200%)
+const CORRUPTION_PER_ROTTEN_FOOD = 33.33; // Each rotten food adds 33.33% corruption (6 rotten food = 200%)
 
 // Directions
 const DIRECTIONS = {
@@ -48,22 +49,32 @@ const GameBoard = styled.div`
   position: relative;
   width: ${GRID_SIZE * CELL_SIZE}px;
   height: ${GRID_SIZE * CELL_SIZE}px;
-  border: 2px solid ${props => props.superCorrupted ? '#ff0000' : '#61dafb'};
+  border: 2px solid ${props => {
+    if (props.superCorrupted) return '#ff0000';
+    if (props.corruptionPercent <= 0) return '#61dafb';
+    
+    // Gradually transition from blue to red based on corruption percentage
+    const blueComponent = Math.max(0, 251 - (props.corruptionPercent * 1.5));
+    const redComponent = Math.min(255, 97 + (props.corruptionPercent * 0.8));
+    return `rgb(${redComponent}, ${blueComponent > 100 ? 100 : blueComponent}, ${blueComponent > 150 ? 251 : blueComponent})`;
+  }};
   background-color: ${props => {
     if (props.superCorrupted) return '#3d0000';
-    // Gradually change background color based on corruption level
-    if (props.corruptionLevel <= 0) return '#1e2127';
-    if (props.corruptionLevel === 1) return '#271e1e';
-    if (props.corruptionLevel === 2) return '#2a1a1a';
-    if (props.corruptionLevel >= 3) return '#2d1515';
+    if (props.corruptionPercent <= 0) return '#1e2127';
+    
+    // Gradually transition background color based on corruption percentage
+    const redComponent = Math.min(45, 30 + (props.corruptionPercent * 0.075));
+    const blueComponent = Math.max(20, 33 - (props.corruptionPercent * 0.065));
+    return `rgb(${redComponent}, ${blueComponent}, ${blueComponent})`;
   }};
   box-shadow: ${props => {
     if (props.superCorrupted) return '0 0 30px rgba(255, 0, 0, 0.5)';
-    // Gradually change shadow color based on corruption level
-    if (props.corruptionLevel <= 0) return '0 0 20px rgba(97, 218, 251, 0.3)';
-    if (props.corruptionLevel === 1) return '0 0 20px rgba(251, 97, 97, 0.1), 0 0 20px rgba(97, 218, 251, 0.2)';
-    if (props.corruptionLevel === 2) return '0 0 20px rgba(251, 97, 97, 0.2), 0 0 20px rgba(97, 218, 251, 0.1)';
-    if (props.corruptionLevel >= 3) return '0 0 20px rgba(251, 97, 97, 0.3)';
+    if (props.corruptionPercent <= 0) return '0 0 20px rgba(97, 218, 251, 0.3)';
+    
+    // Gradually transition shadow color based on corruption percentage
+    const redOpacity = Math.min(0.3, props.corruptionPercent * 0.0015);
+    const blueOpacity = Math.max(0, 0.3 - (props.corruptionPercent * 0.0015));
+    return `0 0 20px rgba(251, 97, 97, ${redOpacity}), 0 0 20px rgba(97, 218, 251, ${blueOpacity})`;
   }};
   border-radius: 4px;
   overflow: hidden;
@@ -78,14 +89,35 @@ const Cell = styled.div`
   top: ${props => props.y * CELL_SIZE}px;
   background-color: ${props => props.color};
   border-radius: ${props => props.isHead ? '4px' : '0'};
-  box-shadow: ${props => props.isHead ? '0 0 5px rgba(97, 218, 251, 0.8)' : 'none'};
-  transition: background-color 0.1s ease;
+  box-shadow: ${props => {
+    if (props.isHead) {
+      if (props.superCorrupted) {
+        return '0 0 8px rgba(255, 0, 0, 0.8)';
+      } else if (props.corruptionPercent > 0) {
+        // Gradually transition glow from blue to red
+        const redOpacity = Math.min(0.8, props.corruptionPercent * 0.004);
+        const blueOpacity = Math.max(0, 0.8 - (props.corruptionPercent * 0.004));
+        return `0 0 5px rgba(255, 0, 0, ${redOpacity}), 0 0 5px rgba(97, 218, 251, ${blueOpacity})`;
+      } else {
+        return '0 0 5px rgba(97, 218, 251, 0.8)';
+      }
+    } else {
+      return 'none';
+    }
+  }};
+  transition: background-color 0.1s ease, box-shadow 0.3s ease;
 `;
 
 const FoodCell = styled(Cell)`
   background-color: ${props => props.isRotten ? '#8B4513' : '#4CAF50'};
   border-radius: 50%;
-  animation: ${props => props.isRotten ? 'pulse 1s infinite' : 'glow 2s infinite'};
+  animation: ${props => {
+    if (props.isRotten) {
+      return props.superCorrupted ? 'rottenPulseCorrupted 0.8s infinite' : 'pulse 1s infinite';
+    } else {
+      return props.superCorrupted ? 'freshGlowCorrupted 2s infinite' : 'glow 2s infinite';
+    }
+  }};
   
   @keyframes pulse {
     0% { transform: scale(1); box-shadow: 0 0 5px rgba(139, 69, 19, 0.6); }
@@ -93,10 +125,22 @@ const FoodCell = styled(Cell)`
     100% { transform: scale(1); box-shadow: 0 0 5px rgba(139, 69, 19, 0.6); }
   }
   
+  @keyframes rottenPulseCorrupted {
+    0% { transform: scale(1); box-shadow: 0 0 8px rgba(139, 0, 0, 0.8); }
+    50% { transform: scale(1.15); box-shadow: 0 0 15px rgba(139, 0, 0, 1); }
+    100% { transform: scale(1); box-shadow: 0 0 8px rgba(139, 0, 0, 0.8); }
+  }
+  
   @keyframes glow {
     0% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.6); }
     50% { box-shadow: 0 0 10px rgba(76, 175, 80, 0.8); }
     100% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.6); }
+  }
+  
+  @keyframes freshGlowCorrupted {
+    0% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.6), 0 0 8px rgba(255, 0, 0, 0.3); }
+    50% { box-shadow: 0 0 10px rgba(76, 175, 80, 0.8), 0 0 12px rgba(255, 0, 0, 0.5); }
+    100% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.6), 0 0 8px rgba(255, 0, 0, 0.3); }
   }
 `;
 
@@ -358,6 +402,7 @@ function SnakeGame({ onGameOver }) {
   const [nextFoodId, setNextFoodId] = useState(2);
   const [foodSpawnInterval, setFoodSpawnInterval] = useState(INITIAL_FOOD_SPAWN_INTERVAL);
   const [isSuperCorrupted, setIsSuperCorrupted] = useState(false);
+  const [corruptionPercent, setCorruptionPercent] = useState(0);
   
   // Refs to store the current state values for use in event listeners
   const directionRef = useRef(direction);
@@ -372,6 +417,7 @@ function SnakeGame({ onGameOver }) {
   const nextFoodIdRef = useRef(nextFoodId);
   const foodSpawnIntervalRef = useRef(foodSpawnInterval);
   const isSuperCorruptedRef = useRef(isSuperCorrupted);
+  const corruptionPercentRef = useRef(corruptionPercent);
   
   // Update refs when state changes
   useEffect(() => { directionRef.current = direction; }, [direction]);
@@ -386,6 +432,7 @@ function SnakeGame({ onGameOver }) {
   useEffect(() => { nextFoodIdRef.current = nextFoodId; }, [nextFoodId]);
   useEffect(() => { foodSpawnIntervalRef.current = foodSpawnInterval; }, [foodSpawnInterval]);
   useEffect(() => { isSuperCorruptedRef.current = isSuperCorrupted; }, [isSuperCorrupted]);
+  useEffect(() => { corruptionPercentRef.current = corruptionPercent; }, [corruptionPercent]);
 
   // Check if a specific food is rotten
   const isFoodRotten = useCallback((food) => {
@@ -514,7 +561,7 @@ function SnakeGame({ onGameOver }) {
       try {
         const response = await axios.get(`${API_URL}/quotes/existential`);
         
-        // Make thoughts more deranged based on corruption level (rotten food eaten)
+        // Make thoughts more deranged based on corruption percentage
         let comment = response.data.comment;
         
         // Super corrupted state has even more deranged thoughts
@@ -539,24 +586,24 @@ function SnakeGame({ onGameOver }) {
           const randomPhrase = disturbingPhrases[Math.floor(Math.random() * disturbingPhrases.length)];
           comment += randomPhrase;
         }
-        else if (rottenFoodEatenRef.current > 0) {
-          // Add more deranged elements based on corruption level
-          const derangementLevel = Math.min(rottenFoodEatenRef.current, 3); // Cap at level 3
+        else if (corruptionPercentRef.current > 0) {
+          // Add more deranged elements based on corruption percentage
+          const corruptionLevel = Math.min(Math.floor(corruptionPercentRef.current / 50) + 1, 3); // 0-50% = 1, 50-100% = 2, 100-150% = 3
           
           // Add random text effects based on derangement level
-          if (derangementLevel >= 1) {
+          if (corruptionLevel >= 1) {
             // Level 1: Random capitalization
             comment = comment.split('').map(c => Math.random() > 0.8 ? c.toUpperCase() : c).join('');
           }
           
-          if (derangementLevel >= 2) {
+          if (corruptionLevel >= 2) {
             // Level 2: Add random punctuation
             const punctuation = ['!', '?', '...', '!?'];
             const randomPunct = punctuation[Math.floor(Math.random() * punctuation.length)];
             comment = comment.replace('.', randomPunct);
           }
           
-          if (derangementLevel >= 3) {
+          if (corruptionLevel >= 3) {
             // Level 3: Add disturbing phrases
             const disturbingPhrases = [
               " The walls are closing in.",
@@ -780,8 +827,12 @@ function SnakeGame({ onGameOver }) {
               const newRottenCount = rottenFoodEatenRef.current + 1;
               setRottenFoodEaten(newRottenCount);
               
+              // Calculate new corruption percentage
+              const newCorruptionPercent = Math.min(CORRUPTION_PER_ROTTEN_FOOD * newRottenCount, SUPER_CORRUPTION_THRESHOLD);
+              setCorruptionPercent(newCorruptionPercent);
+              
               // Check for super corruption threshold
-              if (newRottenCount >= SUPER_CORRUPTION_THRESHOLD && !isSuperCorruptedRef.current) {
+              if (newCorruptionPercent >= SUPER_CORRUPTION_THRESHOLD && !isSuperCorruptedRef.current) {
                 setIsSuperCorrupted(true);
                 showMessage("THE CORRUPTION IS COMPLETE. YOUR MIND IS NO LONGER YOUR OWN.", null, '#ff0000', 5000);
               } else {
@@ -882,30 +933,49 @@ function SnakeGame({ onGameOver }) {
           score,
           totalFoodEaten: foodEaten,
           rottenFoodEaten,
-          isSuperCorrupted
+          isSuperCorrupted,
+          corruptionPercent
         });
       }, 100);
     }
-  }, [gameOver, onGameOver, score, foodEaten, rottenFoodEaten, isSuperCorrupted]);
+  }, [gameOver, onGameOver, score, foodEaten, rottenFoodEaten, isSuperCorrupted, corruptionPercent]);
 
   return (
     <GameContainer className="GameContainer">
       <GameBoard 
-        corruptionLevel={Math.min(rottenFoodEaten, 3)} 
+        corruptionPercent={corruptionPercent} 
         superCorrupted={isSuperCorrupted}
       >
         {/* Render snake */}
-        {snake.map((segment, index) => (
-          <Cell
-            key={`snake-${index}`}
-            x={segment.x}
-            y={segment.y}
-            color={isSuperCorrupted ? 
-              (index === 0 ? '#ff3333' : '#b30000') : 
-              (index === 0 ? '#61dafb' : '#4a90e2')}
-            isHead={index === 0}
-          />
-        ))}
+        {snake.map((segment, index) => {
+          // Calculate snake color based on corruption percentage
+          let headColor = '#61dafb';
+          let bodyColor = '#4a90e2';
+          
+          if (isSuperCorrupted) {
+            headColor = '#ff3333';
+            bodyColor = '#b30000';
+          } else if (corruptionPercent > 0) {
+            // Gradually transition snake colors based on corruption percentage
+            const blueComponent = Math.max(0, 251 - (corruptionPercent * 1.25));
+            const redComponent = Math.min(255, 97 + (corruptionPercent * 0.8));
+            
+            headColor = `rgb(${redComponent}, ${blueComponent > 100 ? 100 : blueComponent}, ${blueComponent > 150 ? 251 : blueComponent})`;
+            bodyColor = `rgb(${redComponent * 0.8}, ${blueComponent > 100 ? 80 : blueComponent * 0.8}, ${blueComponent > 150 ? 226 : blueComponent * 0.9})`;
+          }
+          
+          return (
+            <Cell
+              key={`snake-${index}`}
+              x={segment.x}
+              y={segment.y}
+              color={index === 0 ? headColor : bodyColor}
+              isHead={index === 0}
+              corruptionPercent={corruptionPercent}
+              superCorrupted={isSuperCorrupted}
+            />
+          );
+        })}
         
         {/* Render all food items */}
         {foods.map(food => (
@@ -914,6 +984,8 @@ function SnakeGame({ onGameOver }) {
             x={food.x}
             y={food.y}
             isRotten={isFoodRotten(food)}
+            superCorrupted={isSuperCorrupted}
+            corruptionPercent={corruptionPercent}
           />
         ))}
         
@@ -942,6 +1014,7 @@ function SnakeGame({ onGameOver }) {
           <GameInfo>
             <StatItem superCorrupted={isSuperCorrupted}>Food: <span>{foodEaten}</span></StatItem>
             <StatItem superCorrupted={isSuperCorrupted}>Rotten: <span>{rottenFoodEaten}</span></StatItem>
+            <StatItem superCorrupted={isSuperCorrupted}>Corruption: <span>{Math.floor(corruptionPercent)}%</span></StatItem>
           </GameInfo>
         </GameStatsContainer>
         
