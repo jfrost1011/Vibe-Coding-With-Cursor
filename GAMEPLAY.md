@@ -15,6 +15,69 @@ A unique twist on the classic Snake game where the snake experiences existential
 - **Enhanced UI**: Beautiful, modern UI with glowing effects, animations, and visual polish.
 - **Side Panel**: Existential thoughts and game stats are displayed in a dedicated side panel.
 
+## Launching the Game
+
+### Quick Launch (Using Setup Scripts)
+
+We've made some awesome scripts that do all the setup for you:
+
+- **Linux/macOS**:
+  ```
+  chmod +x setup.sh
+  ./setup.sh
+  ```
+
+- **Windows** (Run in PowerShell):
+  ```
+  .\setup.ps1
+  ```
+
+After running the script, just follow the instructions on screen.
+
+### Manual Launch
+
+#### Backend Setup
+
+1. Navigate to the backend directory:
+   ```
+   cd backend
+   ```
+
+2. Activate the virtual environment:
+   - On Windows (Command Prompt):
+     ```
+     .venv\Scripts\activate
+     ```
+   - On Windows (PowerShell):
+     ```
+     .\.venv\Scripts\Activate.ps1
+     ```
+   - On macOS/Linux:
+     ```
+     source .venv/bin/activate
+     ```
+
+3. Start the FastAPI server:
+   ```
+   uv run main.py
+   ```
+
+   The backend server will start running at `http://localhost:8000`.
+
+#### Frontend Setup
+
+1. Open a new terminal window and navigate to the frontend directory:
+   ```
+   cd frontend
+   ```
+
+2. Start the React development server:
+   ```
+   npm start
+   ```
+
+   The frontend will start at `http://localhost:3000`.
+
 ## Game Controls
 
 - **Arrow Keys** or **WASD Keys**: Control the snake's direction
@@ -24,11 +87,12 @@ A unique twist on the classic Snake game where the snake experiences existential
 
 1. Open your browser and go to `http://localhost:3000`.
 2. Enter your name on the start screen and click "Begin Existence".
-3. Use the arrow keys or WASD to control the snake and eat food.
-4. Try to eat 10 pieces of food to win the game.
-5. Be mindful of rotten food - if more than 50% of the food you eat is rotten, you'll get a bad ending.
-6. The snake will frequently share existential thoughts or philosophical quotes in the side panel.
-7. If you stop moving for a few seconds, the snake will contemplate its stillness.
+3. A 3-second countdown will appear before the game starts.
+4. Use the arrow keys or WASD to control the snake and eat food.
+5. Try to eat 10 pieces of food to win the game.
+6. Be mindful of rotten food - if more than 50% of the food you eat is rotten, you'll get a bad ending.
+7. The snake will frequently share existential thoughts or philosophical quotes in the side panel.
+8. If you stop moving for a few seconds, the snake will contemplate its stillness.
 
 ## Game Mechanics
 
@@ -43,6 +107,12 @@ A unique twist on the classic Snake game where the snake experiences existential
 - **Endings**:
   - **Victory - Good Ending**: Eat 10 pieces of food with less than 50% of food eaten being rotten.
   - **Victory - Bad Ending**: Eat 10 pieces of food with 50% or more of food eaten being rotten.
+
+## Troubleshooting
+
+- **Backend Connection Issues**: Make sure the FastAPI server is running at `http://localhost:8000`.
+- **CORS Errors**: The backend is configured to allow requests from anywhere. If you hit CORS issues, check your browser's security settings.
+- **Game Performance**: If the game is running slowly, try closing other browser tabs to free up resources.
 
 ## Credits
 

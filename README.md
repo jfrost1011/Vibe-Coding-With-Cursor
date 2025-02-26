@@ -7,7 +7,7 @@
 
 Ssssup, fellow existentialists! Welcome to the most mind-bending, scale-raising twist on the classic Snake game ever! This ain't your average reptile simulator - our snake is slithering through a full-blown existential crisis while dropping philosophical quotes that'll make your brain do coils! 🤯 Plus, food gets all nasty and rotten if you wait too long (talk about a sssspoiled meal!), and your snake will totally judge your life choices when you eat the gross stuff - how ssssassy!
 
-> **Want to sink your fangs into the full gameplay deets?** Check out [GAMEPLAY.md](GAMEPLAY.md) for all the juicy features and mechanics! 🎮
+> **Want to sink your fangs into the full gameplay deets?** Check out [GAMEPLAY.md](GAMEPLAY.md) for all the juicy features, mechanics, and how to launch the game! 🎮
 
 ## 📋 What's Coiled Up Inside This Repo
 
@@ -18,18 +18,16 @@ Ssssup, fellow existentialists! Welcome to the most mind-bending, scale-raising 
 - [When Stuff Hisssses and Breaks](#troubleshooting) 🔧
 - [Legal Boring Sssstuff](#license) 📜
 
-## 🛠️ What You Need to Ssslither
+## 🛠️ What You Need to Ssslither <a name="prerequisites"></a>
 
 Before you dive into the existential abyss, make sure you've ssscaled up with:
 - [Node.js](https://nodejs.org/) (v14 or higher) - JavaScript runtime that's actually cool
 - [npm](https://www.npmjs.com/) (comes with Node.js) - for all those sweet packages
-- [Python](https://www.python.org/) (v3.8 or higher) - because snakes 🐍 and Python, get it? It's practically cannibalism!
+- [Python](https://www.python.org/) (v3.8 or higher) - because snakes 🐍 and Python, get it?
 - [UV](https://github.com/astral-sh/uv) - the lightning-fast package installer that makes pip look like it's molting 🐢
-- [Rust](https://www.rust-lang.org/tools/install) - for building pydantic-core (and feeling like a hardcore dev with snake-like reflexes)
+- [Cursor](https://cursor.sh/) - the AI-powered code editor that'll make your coding slither smoothly! 🧠✨
 
-> **Pro Tip**: 💡 Don't wanna mess with Rust? No worries! Use `backend/requirements-no-rust.txt` instead and skip the Rust party. It's like taking the easy path in a video game - we won't judge your lack of venom! 🐍
-
-## 🚀 Getting This Bad Boy Ssstarted
+## 🚀 Getting This Bad Boy Ssstarted <a name="installation"></a>
 
 ### ⚡ Quick Setup (The Lazy Snake Way - We Approve!)
 
@@ -64,6 +62,13 @@ If you don't have UV yet, get it with these commands (they won't bite!):
   curl -sSf https://astral.sh/uv/install.sh | sh
   ```
 
+#### Installing Cursor
+
+1. Head over to [cursor.sh](https://cursor.sh/) and download the installer for your OS
+2. Run the installer and follow the prompts
+3. Launch Cursor and open this project folder
+4. Feel the power of AI-assisted coding flow through your fingertips! 🧙‍♂️✨
+
 #### Backend Setup (Where the Snake's Brain Lives)
 
 1. Slither into the backend directory:
@@ -91,15 +96,8 @@ If you don't have UV yet, get it with these commands (they won't bite!):
      ```
 
 4. Install the required dependencies using UV:
-   
-   **With Rust installed** (for speed demons with fangs 🐍💨):
    ```
    uv pip install -r requirements.txt
-   ```
-   
-   **Without Rust** (for the patient pythons 🧘‍♂️🐍):
-   ```
-   uv pip install -r requirements-no-rust.txt
    ```
 
 5. Start the FastAPI server (release the snake!):
@@ -128,14 +126,13 @@ If you don't have UV yet, get it with these commands (they won't bite!):
 
    The frontend will fire up at `http://localhost:3000`. Look at you, web dev snake charmer! 🧙‍♂️🐍
 
-## 🏗️ How This Thing's Ssstructured
+## 🏗️ How This Thing's Ssstructured <a name="project-structure"></a>
 
 ```
 existential-snake-game/
 ├── backend/                         # Where the snake's brain lives
 │   ├── main.py                      # FastAPI server (the snake charmer)
-│   ├── requirements.txt             # Python dependencies (with Rust)
-│   ├── requirements-no-rust.txt     # Python dependencies (Rust-free)
+│   ├── requirements.txt             # Python dependencies
 │   └── data/                        # Where we store all the deep snake thoughts
 ├── frontend/                        # The pretty scales of our existential snake
 │   ├── public/                      # Static files (boring but necessary)
@@ -154,17 +151,17 @@ existential-snake-game/
 └── GAMEPLAY.md                      # All the juicy snake game details
 ```
 
-## ⚡ Why UV Is More Venomous Than pip
+## ⚡ Why UV Is More Venomous Than pip <a name="why-uv-instead-of-pip"></a>
 
 UV is the cobra 🐍 of Python package installers:
 
 - **Speed**: UV strikes faster than a rattlesnake, being 10-100x quicker than pip! Zoom zoom! 🏁
 - **Reliability**: Dependency resolution that actually works (shocking, we know) - no more tangled nests!
 - **Compatibility**: Works with pip's commands, so no new snake tricks to learn
-- **Safety**: Written in Rust, so it's basically wearing snake armor
+- **Safety**: Written in a safe language, so it's basically wearing snake armor
 - **Environment Management**: The `uv run` command makes sure everything runs in the right place, so you can say goodbye to those annoying "module not found" errors that make you want to hiss in frustration 🐍
 
-## 🔧 When Stuff Hisssses and Breaks
+## 🔧 When Stuff Hisssses and Breaks <a name="troubleshooting"></a>
 
 - **Backend Connection Issues**: Make sure the FastAPI server is running at `http://localhost:8000`. No server = sad snake with nowhere to slither 😢
 - **CORS Errors**: The backend is configured to allow requests from anywhere. If you hit CORS issues, check your browser's security settings (they're being overprotective of your snake).
@@ -174,14 +171,8 @@ UV is the cobra 🐍 of Python package installers:
   - On Windows PowerShell: use `.\.venv\Scripts\Activate.ps1`
   - On Windows Command Prompt: use `.venv\Scripts\activate`
   - On macOS/Linux: use `source .venv/bin/activate`
-- **Pydantic-core Build Error**: 
-  - If you see `Failed to build pydantic-core` with `Cargo metadata failed`, you need Rust in your life.
-  - Install Rust with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-  - After installing, restart your terminal or run `source "$HOME/.cargo/env"` to update your PATH.
-  - Then try again! Persistence is key! 🔑
-  - **Too Much Work?**: Just use `requirements-no-rust.txt` instead. Work smarter, not harder, just like a clever snake would! 😎🐍
 
-## 📜 Legal Boring Sssstuff
+## 📜 Legal Boring Sssstuff <a name="license"></a>
 
 This project is open source and available under the [MIT License](LICENSE). That means you can do pretty much whatever you want with it - go wild! Just don't blame us if your snake has an existential crisis. That's between you two. 🐍💭
 
