@@ -6,8 +6,8 @@ import axios from 'axios';
 const API_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:8000';
 
 // Game constants
-const GRID_SIZE = 20;
-const CELL_SIZE = 20;
+const GRID_SIZE = 25;
+const CELL_SIZE = 22;
 const GAME_SPEED = 150;
 const FOOD_FRESH_DURATION = 10000; // 10 seconds before food starts rotting
 const EXISTENTIAL_DREAD_INTERVAL = 12000; // Reduced from 20000 to 12000 ms to make snake chattier
@@ -26,11 +26,15 @@ const GameContainer = styled.div`
   align-items: flex-start;
   justify-content: center;
   margin: 0 auto;
-  gap: 20px;
-  max-width: 1200px;
+  gap: 30px;
+  max-width: 1400px;
   padding: 20px;
   width: 100%;
   height: ${GRID_SIZE * CELL_SIZE + 40}px; /* Add fixed height based on game board + padding */
+  
+  &.GameContainer {
+    /* This class is used for responsive styling in App.css */
+  }
 `;
 
 const GameBoard = styled.div`
@@ -75,7 +79,7 @@ const FoodCell = styled(Cell)`
 `;
 
 const SidePanel = styled.div`
-  width: 300px;
+  width: 350px;
   height: ${GRID_SIZE * CELL_SIZE}px;
   background-color: rgba(0, 0, 0, 0.7);
   border-radius: 8px;
@@ -85,12 +89,16 @@ const SidePanel = styled.div`
   box-shadow: 0 0 15px rgba(97, 218, 251, 0.2);
   border: 1px solid rgba(97, 218, 251, 0.1);
   overflow: hidden;
+  
+  &.SidePanel {
+    /* This class is used for responsive styling in App.css */
+  }
 `;
 
 const GameStatsContainer = styled.div`
   background-color: rgba(30, 33, 39, 0.6);
   border-radius: 6px;
-  padding: 1rem;
+  padding: 1.2rem;
   margin-bottom: 1.5rem;
   border: 1px solid rgba(97, 218, 251, 0.2);
 `;
@@ -99,12 +107,13 @@ const GameInfo = styled.div`
   display: flex;
   justify-content: space-between;
   font-size: 1.2rem;
-  margin-top: 0.5rem;
+  margin: 0.5rem 0;
 `;
 
 const StatItem = styled.div`
   display: flex;
   align-items: center;
+  margin-right: 10px;
   
   span {
     color: #61dafb;
@@ -171,7 +180,7 @@ const QuoteAuthor = styled.span`
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   margin-top: 0;
   margin-bottom: 1rem;
   color: #61dafb;
@@ -267,6 +276,7 @@ const QuotesContainer = styled.div`
   flex: 1;
   overflow-y: auto;
   margin-bottom: 1rem;
+  max-height: 50%;
   
   /* Scrollbar styling */
   &::-webkit-scrollbar {
@@ -634,7 +644,7 @@ function SnakeGame({ onGameOver }) {
   }, [gameOver, onGameOver, score, foodEaten, rottenFoodEaten]);
 
   return (
-    <GameContainer>
+    <GameContainer className="GameContainer">
       <GameBoard>
         {/* Render snake */}
         {snake.map((segment, index) => (
@@ -670,11 +680,13 @@ function SnakeGame({ onGameOver }) {
         )}
       </GameBoard>
       
-      <SidePanel>
+      <SidePanel className="SidePanel">
         <SectionTitle>Game Stats</SectionTitle>
         <GameStatsContainer>
           <GameInfo>
             <StatItem>Score: <span>{score}</span></StatItem>
+          </GameInfo>
+          <GameInfo>
             <StatItem>Food: <span>{foodEaten}/10</span></StatItem>
             <StatItem>Rotten: <span>{rottenFoodEaten}</span></StatItem>
           </GameInfo>

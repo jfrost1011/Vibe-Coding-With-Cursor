@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import SnakeGame from './components/SnakeGame';
 import StartScreen from './components/StartScreen';
@@ -53,6 +53,33 @@ const BackgroundParticle = styled.div`
   }
 `;
 
+const CountdownOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  backdrop-filter: blur(3px);
+`;
+
+const CountdownNumber = styled.div`
+  font-size: 8rem;
+  color: #61dafb;
+  text-shadow: 0 0 20px rgba(97, 218, 251, 0.8);
+  animation: pulse 1s infinite;
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+`;
+
 // Generate background particles
 const generateParticles = (count) => {
   const particles = [];
@@ -74,10 +101,23 @@ function App() {
   const [gameState, setGameState] = useState('start'); // start, playing, end
   const [playerName, setPlayerName] = useState('');
   const [gameStats, setGameStats] = useState(null);
+  const [countdown, setCountdown] = useState(null);
 
   const handleStartGame = (name) => {
     setPlayerName(name);
-    setGameState('playing');
+    setCountdown(3);
+    
+    // Start countdown
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          setGameState('playing');
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   const handleGameOver = (stats) => {
@@ -112,7 +152,13 @@ function App() {
         </>
       )}
       
-      {gameState === 'playing' && (
+      {countdown !== null && (
+        <CountdownOverlay>
+          <CountdownNumber>{countdown}</CountdownNumber>
+        </CountdownOverlay>
+      )}
+      
+      {gameState === 'playing' && countdown === null && (
         <SnakeGame onGameOver={handleGameOver} />
       )}
       
