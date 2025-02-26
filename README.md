@@ -126,28 +126,6 @@ UV (pronounced "you-vee") is a modern Python package installer and resolver deve
    uv --version
    ```
 
-## Using UV with Cursor
-
-UV can be used as a drop-in replacement for pip in most cases. Here's how to use it with Cursor:
-
-1. Open Cursor
-2. Open a terminal in Cursor (Terminal > New Terminal)
-3. Create a virtual environment (optional but recommended):
-   ```bash
-   uv venv  # Creates a .venv in the current directory
-   ```
-4. Activate the virtual environment:
-   - Windows: `.venv\Scripts\activate`
-   - macOS/Linux: `source .venv/bin/activate`
-5. Install packages:
-   ```bash
-   uv pip install package-name
-   ```
-6. Install packages from a requirements file:
-   ```bash
-   uv pip install -r requirements.txt
-   ```
-
 ## Troubleshooting
 
 ### Cursor Issues
