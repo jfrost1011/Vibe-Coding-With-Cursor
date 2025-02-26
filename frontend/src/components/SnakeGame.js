@@ -6,11 +6,12 @@ import axios from 'axios';
 const API_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:8000';
 
 // Game constants
-const GRID_SIZE = 25;
+const GRID_SIZE = 35;
 const CELL_SIZE = 22;
 const GAME_SPEED = 150;
 const FOOD_FRESH_DURATION = 10000; // 10 seconds before food starts rotting
 const EXISTENTIAL_DREAD_INTERVAL = 12000; // Reduced from 20000 to 12000 ms to make snake chattier
+const MAX_FOOD_ITEMS = 5; // Maximum number of food items on the board at once
 
 // Directions
 const DIRECTIONS = {
@@ -27,7 +28,7 @@ const GameContainer = styled.div`
   justify-content: center;
   margin: 0 auto;
   gap: 30px;
-  max-width: 1400px;
+  max-width: 1600px;
   padding: 20px;
   width: 100%;
   height: ${GRID_SIZE * CELL_SIZE + 40}px; /* Add fixed height based on game board + padding */
@@ -79,7 +80,7 @@ const FoodCell = styled(Cell)`
 `;
 
 const SidePanel = styled.div`
-  width: 350px;
+  width: 450px;
   height: ${GRID_SIZE * CELL_SIZE}px;
   background-color: rgba(0, 0, 0, 0.7);
   border-radius: 8px;
@@ -273,10 +274,14 @@ const ControlsInfo = styled.div`
 `;
 
 const QuotesContainer = styled.div`
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
   overflow-y: auto;
-  margin-bottom: 1rem;
-  max-height: 50%;
+  flex: 1;
+  padding-right: 0.5rem;
+  max-height: ${GRID_SIZE * CELL_SIZE - 250}px;
   
   /* Scrollbar styling */
   &::-webkit-scrollbar {
@@ -284,24 +289,24 @@ const QuotesContainer = styled.div`
   }
   
   &::-webkit-scrollbar-track {
-    background: rgba(30, 33, 39, 0.4);
-    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
   }
   
   &::-webkit-scrollbar-thumb {
-    background: rgba(97, 218, 251, 0.4);
-    border-radius: 3px;
+    background: rgba(97, 218, 251, 0.3);
+    border-radius: 10px;
   }
   
   &::-webkit-scrollbar-thumb:hover {
-    background: rgba(97, 218, 251, 0.6);
+    background: rgba(97, 218, 251, 0.5);
   }
 `;
 
 function SnakeGame({ onGameOver }) {
   // Game state
   const [snake, setSnake] = useState([{ x: 10, y: 10 }]);
-  const [food, setFood] = useState({ x: 5, y: 5, createdAt: Date.now() });
+  const [foods, setFoods] = useState([{ x: 5, y: 5, createdAt: Date.now(), id: 1 }]);
   const [direction, setDirection] = useState(DIRECTIONS.RIGHT);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
@@ -311,55 +316,73 @@ function SnakeGame({ onGameOver }) {
   const [rottenFoodEaten, setRottenFoodEaten] = useState(0);
   const [quotes, setQuotes] = useState([]);
   const [idleTime, setIdleTime] = useState(0);
-  const [recentMessages, setRecentMessages] = useState([]); // Track recent messages to prevent repetition
-  const [foodFrequency, setFoodFrequency] = useState(1); // Track food frequency multiplier
+  const [recentMessages, setRecentMessages] = useState([]);
+  const [foodFrequency, setFoodFrequency] = useState(1);
+  const [nextFoodId, setNextFoodId] = useState(2);
   
   // Refs to store the current state values for use in event listeners
   const directionRef = useRef(direction);
   const snakeRef = useRef(snake);
-  const foodRef = useRef(food);
+  const foodsRef = useRef(foods);
   const gameOverRef = useRef(gameOver);
   const isPausedRef = useRef(isPaused);
   const scoreRef = useRef(score);
   const foodEatenRef = useRef(foodEaten);
   const rottenFoodEatenRef = useRef(rottenFoodEaten);
   const idleTimeRef = useRef(idleTime);
+  const nextFoodIdRef = useRef(nextFoodId);
   
   // Update refs when state changes
   useEffect(() => { directionRef.current = direction; }, [direction]);
   useEffect(() => { snakeRef.current = snake; }, [snake]);
-  useEffect(() => { foodRef.current = food; }, [food]);
+  useEffect(() => { foodsRef.current = foods; }, [foods]);
   useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { foodEatenRef.current = foodEaten; }, [foodEaten]);
   useEffect(() => { rottenFoodEatenRef.current = rottenFoodEaten; }, [rottenFoodEaten]);
   useEffect(() => { idleTimeRef.current = idleTime; }, [idleTime]);
+  useEffect(() => { nextFoodIdRef.current = nextFoodId; }, [nextFoodId]);
 
-  // Check if food is rotten
-  const isFoodRotten = useCallback(() => {
+  // Check if a specific food is rotten
+  const isFoodRotten = useCallback((food) => {
     return Date.now() - food.createdAt > FOOD_FRESH_DURATION;
-  }, [food.createdAt]);
+  }, []);
 
   // Generate new food at random position
   const generateFood = useCallback(() => {
     const newFood = {
       x: Math.floor(Math.random() * GRID_SIZE),
       y: Math.floor(Math.random() * GRID_SIZE),
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      id: nextFoodIdRef.current
     };
     
-    // Make sure food doesn't spawn on snake
+    setNextFoodId(prev => prev + 1);
+    
+    // Make sure food doesn't spawn on snake or other food
     const isOnSnake = snakeRef.current.some(
       segment => segment.x === newFood.x && segment.y === newFood.y
     );
     
-    if (isOnSnake) {
+    const isOnExistingFood = foodsRef.current.some(
+      food => food.x === newFood.x && food.y === newFood.y
+    );
+    
+    if (isOnSnake || isOnExistingFood) {
       return generateFood();
     }
     
     return newFood;
   }, []);
+
+  // Add a new food item to the board
+  const addFood = useCallback(() => {
+    if (foodsRef.current.length < MAX_FOOD_ITEMS) {
+      const newFood = generateFood();
+      setFoods(prev => [...prev, newFood]);
+    }
+  }, [generateFood]);
 
   // Add a quote to the side panel
   const addQuote = useCallback((text, author = null, color = null, type = "Philosophical") => {
@@ -369,10 +392,10 @@ function SnakeGame({ onGameOver }) {
     }
     
     setQuotes(prev => {
-      // Keep only the last 4 quotes (increased from 3)
+      // Keep only the last 8 quotes (increased from 4)
       const newQuotes = [...prev, { text, author, color, type, id: Date.now() }];
-      if (newQuotes.length > 4) {
-        return newQuotes.slice(newQuotes.length - 4);
+      if (newQuotes.length > 8) {
+        return newQuotes.slice(newQuotes.length - 8);
       }
       return newQuotes;
     });
@@ -633,53 +656,76 @@ function SnakeGame({ onGameOver }) {
           return prevSnake;
         }
         
-        // Check for collision with food
-        const currentFood = foodRef.current;
-        if (head.x === currentFood.x && head.y === currentFood.y) {
-          // Increase score
-          const isRotten = Date.now() - currentFood.createdAt > FOOD_FRESH_DURATION;
-          const pointsGained = isRotten ? 1 : 3;
-          setScore(prev => prev + pointsGained);
-          
-          // Track food eaten
-          const newFoodEaten = foodEaten + 1;
-          setFoodEaten(newFoodEaten);
-          
-          if (isRotten) {
-            setRottenFoodEaten(prev => prev + 1);
-            showRottenFoodComment();
+        // Check for collision with any food
+        const currentFoods = [...foodsRef.current];
+        let foodEaten = false;
+        let isRottenFoodEaten = false;
+        
+        for (let i = 0; i < currentFoods.length; i++) {
+          const food = currentFoods[i];
+          if (head.x === food.x && head.y === food.y) {
+            // Remove this food from the array
+            currentFoods.splice(i, 1);
             
-            // GAME OVER if rotten food is eaten
-            setGameOver(true);
-          } else {
-            // Add a happy thought when eating fresh food (25% chance)
-            if (Math.random() < 0.25) {
-              const freshFoodThoughts = [
-                "Ah, sustenance in its purest form. How satisfying.",
-                "This nourishment brings clarity to my serpentine existence.",
-                "With each morsel, I grow stronger, yet no less confused about my purpose.",
-                "Fresh food, fresh thoughts. Yet the cycle of consumption continues.",
-                "Delicious. Though I wonder - am I eating to live, or living to eat?"
-              ];
-              const randomThought = freshFoodThoughts[Math.floor(Math.random() * freshFoodThoughts.length)];
-              addQuote(randomThought, null, '#4CAF50', "Satisfied Thought");
+            // Increase score
+            const isRotten = isFoodRotten(food);
+            const pointsGained = isRotten ? 1 : 3;
+            setScore(prev => prev + pointsGained);
+            
+            // Track food eaten
+            const newFoodEaten = foodEatenRef.current + 1;
+            setFoodEaten(newFoodEaten);
+            
+            if (isRotten) {
+              setRottenFoodEaten(prev => prev + 1);
+              showRottenFoodComment();
+              isRottenFoodEaten = true;
+              
+              // GAME OVER if rotten food is eaten
+              setGameOver(true);
+            } else {
+              // Add a happy thought when eating fresh food (25% chance)
+              if (Math.random() < 0.25) {
+                const freshFoodThoughts = [
+                  "Ah, sustenance in its purest form. How satisfying.",
+                  "This nourishment brings clarity to my serpentine existence.",
+                  "With each morsel, I grow stronger, yet no less confused about my purpose.",
+                  "Fresh food, fresh thoughts. Yet the cycle of consumption continues.",
+                  "Delicious. Though I wonder - am I eating to live, or living to eat?"
+                ];
+                const randomThought = freshFoodThoughts[Math.floor(Math.random() * freshFoodThoughts.length)];
+                addQuote(randomThought, null, '#4CAF50', "Satisfied Thought");
+              }
+              
+              // Increase food frequency as more food is eaten
+              setFoodFrequency(Math.min(3, 1 + (newFoodEaten * 0.2))); // Max 3x frequency
             }
             
-            // Increase food frequency as more food is eaten
-            setFoodFrequency(Math.min(3, 1 + (newFoodEaten * 0.2))); // Max 3x frequency
+            foodEaten = true;
+            break;
           }
-          
-          // Generate new food - potentially multiple based on food frequency
-          setFood(generateFood());
-          
-          // Generate additional food based on food frequency (chance-based)
-          if (Math.random() < (foodFrequency - 1) / 2) {
-            setTimeout(() => {
-              if (!gameOverRef.current) {
-                setFood(generateFood());
+        }
+        
+        // Update foods array
+        setFoods(currentFoods);
+        
+        // Generate new food if one was eaten
+        if (foodEaten) {
+          // Add a new food item
+          setTimeout(() => {
+            if (!gameOverRef.current) {
+              addFood();
+              
+              // Potentially add more food based on food frequency
+              if (Math.random() < (foodFrequency - 1) / 2) {
+                setTimeout(() => {
+                  if (!gameOverRef.current) {
+                    addFood();
+                  }
+                }, 1000); // Add another food after 1 second
               }
-            }, 1000); // Add another food after 1 second
-          }
+            }
+          }, 0);
           
           // Don't remove tail when eating food (snake grows)
           return [head, ...prevSnake];
@@ -693,7 +739,25 @@ function SnakeGame({ onGameOver }) {
     const gameInterval = setInterval(moveSnake, GAME_SPEED);
     
     return () => clearInterval(gameInterval);
-  }, [gameOver, generateFood, showRottenFoodComment, foodEaten, addQuote, foodFrequency]);
+  }, [gameOver, generateFood, showRottenFoodComment, addQuote, foodFrequency, isFoodRotten, addFood]);
+
+  // Periodically add food based on food frequency
+  useEffect(() => {
+    if (gameOver || isPaused) return;
+    
+    const foodGenerationInterval = setInterval(() => {
+      // Base chance of adding food
+      const baseChance = 0.1;
+      // Increased chance based on food frequency
+      const frequencyBonus = (foodFrequency - 1) * 0.1;
+      
+      if (Math.random() < baseChance + frequencyBonus) {
+        addFood();
+      }
+    }, 3000); // Check every 3 seconds
+    
+    return () => clearInterval(foodGenerationInterval);
+  }, [gameOver, isPaused, foodFrequency, addFood]);
 
   // Handle game over
   useEffect(() => {
@@ -720,12 +784,15 @@ function SnakeGame({ onGameOver }) {
           />
         ))}
         
-        {/* Render food */}
-        <FoodCell
-          x={food.x}
-          y={food.y}
-          isRotten={isFoodRotten()}
-        />
+        {/* Render all food items */}
+        {foods.map(food => (
+          <FoodCell
+            key={`food-${food.id}`}
+            x={food.x}
+            y={food.y}
+            isRotten={isFoodRotten(food)}
+          />
+        ))}
         
         {/* Message box for rotten food comments only */}
         {message && (
