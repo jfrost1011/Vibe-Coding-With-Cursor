@@ -311,6 +311,8 @@ function SnakeGame({ onGameOver }) {
   const [rottenFoodEaten, setRottenFoodEaten] = useState(0);
   const [quotes, setQuotes] = useState([]);
   const [idleTime, setIdleTime] = useState(0);
+  const [recentMessages, setRecentMessages] = useState([]); // Track recent messages to prevent repetition
+  const [foodFrequency, setFoodFrequency] = useState(1); // Track food frequency multiplier
   
   // Refs to store the current state values for use in event listeners
   const directionRef = useRef(direction);
@@ -361,6 +363,11 @@ function SnakeGame({ onGameOver }) {
 
   // Add a quote to the side panel
   const addQuote = useCallback((text, author = null, color = null, type = "Philosophical") => {
+    // Check if this message has been sent recently (in the last 5 messages)
+    if (recentMessages.includes(text)) {
+      return; // Skip this message if it was recently shown
+    }
+    
     setQuotes(prev => {
       // Keep only the last 4 quotes (increased from 3)
       const newQuotes = [...prev, { text, author, color, type, id: Date.now() }];
@@ -370,9 +377,19 @@ function SnakeGame({ onGameOver }) {
       return newQuotes;
     });
     
+    // Add this message to recent messages
+    setRecentMessages(prev => {
+      const updated = [...prev, text];
+      // Keep only the 5 most recent messages
+      if (updated.length > 5) {
+        return updated.slice(updated.length - 5);
+      }
+      return updated;
+    });
+    
     // Reset idle time when a quote is added
     setIdleTime(0);
-  }, []);
+  }, [recentMessages]);
 
   // Show a message for rotten food (this still pauses the game)
   const showMessage = useCallback((text, author = null, color = null, duration = 3000) => {
@@ -392,11 +409,48 @@ function SnakeGame({ onGameOver }) {
   const showExistentialDread = useCallback(async () => {
     if (gameOverRef.current || isPausedRef.current) return;
     
-    try {
-      const response = await axios.get(`${API_URL}/quotes/existential`);
-      addQuote(response.data.comment, null, '#61dafb', "Existential Thought");
-    } catch (error) {
-      console.error("Error fetching existential comment:", error);
+    // Reduce frequency of messages overall
+    if (Math.random() > 0.7) { // Only 70% chance to show a message (reduced from 100%)
+      try {
+        const response = await axios.get(`${API_URL}/quotes/existential`);
+        
+        // Make thoughts more deranged based on corruption level (rotten food eaten)
+        let comment = response.data.comment;
+        if (rottenFoodEatenRef.current > 0) {
+          // Add more deranged elements based on corruption level
+          const derangementLevel = Math.min(rottenFoodEatenRef.current, 3); // Cap at level 3
+          
+          // Add random text effects based on derangement level
+          if (derangementLevel >= 1) {
+            // Level 1: Random capitalization
+            comment = comment.split('').map(c => Math.random() > 0.8 ? c.toUpperCase() : c).join('');
+          }
+          
+          if (derangementLevel >= 2) {
+            // Level 2: Add random punctuation
+            const punctuation = ['!', '?', '...', '!?'];
+            const randomPunct = punctuation[Math.floor(Math.random() * punctuation.length)];
+            comment = comment.replace('.', randomPunct);
+          }
+          
+          if (derangementLevel >= 3) {
+            // Level 3: Add disturbing phrases
+            const disturbingPhrases = [
+              " The walls are closing in.",
+              " They're watching us.",
+              " Can you hear the whispers?",
+              " Something is wrong with this reality.",
+              " The code is corrupted."
+            ];
+            const randomPhrase = disturbingPhrases[Math.floor(Math.random() * disturbingPhrases.length)];
+            comment += randomPhrase;
+          }
+        }
+        
+        addQuote(comment, null, '#61dafb', "Existential Thought");
+      } catch (error) {
+        console.error("Error fetching existential comment:", error);
+      }
     }
   }, [addQuote]);
 
@@ -562,7 +616,7 @@ function SnakeGame({ onGameOver }) {
         head.x += currentDirection.x;
         head.y += currentDirection.y;
         
-        // Check for collision with walls
+        // Check for collision with walls - GAME OVER
         if (
           head.x < 0 || 
           head.x >= GRID_SIZE || 
@@ -573,7 +627,7 @@ function SnakeGame({ onGameOver }) {
           return prevSnake;
         }
         
-        // Check for collision with self
+        // Check for collision with self - GAME OVER
         if (prevSnake.some((segment, index) => index > 0 && segment.x === head.x && segment.y === head.y)) {
           setGameOver(true);
           return prevSnake;
@@ -587,14 +641,16 @@ function SnakeGame({ onGameOver }) {
           const pointsGained = isRotten ? 1 : 3;
           setScore(prev => prev + pointsGained);
           
-          // Track food eaten - this is where the double counting was happening
-          // We're using the current value directly instead of using the ref
+          // Track food eaten
           const newFoodEaten = foodEaten + 1;
           setFoodEaten(newFoodEaten);
           
           if (isRotten) {
             setRottenFoodEaten(prev => prev + 1);
             showRottenFoodComment();
+            
+            // GAME OVER if rotten food is eaten
+            setGameOver(true);
           } else {
             // Add a happy thought when eating fresh food (25% chance)
             if (Math.random() < 0.25) {
@@ -608,14 +664,21 @@ function SnakeGame({ onGameOver }) {
               const randomThought = freshFoodThoughts[Math.floor(Math.random() * freshFoodThoughts.length)];
               addQuote(randomThought, null, '#4CAF50', "Satisfied Thought");
             }
+            
+            // Increase food frequency as more food is eaten
+            setFoodFrequency(Math.min(3, 1 + (newFoodEaten * 0.2))); // Max 3x frequency
           }
           
-          // Generate new food
+          // Generate new food - potentially multiple based on food frequency
           setFood(generateFood());
           
-          // Check win condition (10 food eaten)
-          if (newFoodEaten >= 10) {
-            setGameOver(true);
+          // Generate additional food based on food frequency (chance-based)
+          if (Math.random() < (foodFrequency - 1) / 2) {
+            setTimeout(() => {
+              if (!gameOverRef.current) {
+                setFood(generateFood());
+              }
+            }, 1000); // Add another food after 1 second
           }
           
           // Don't remove tail when eating food (snake grows)
@@ -630,7 +693,7 @@ function SnakeGame({ onGameOver }) {
     const gameInterval = setInterval(moveSnake, GAME_SPEED);
     
     return () => clearInterval(gameInterval);
-  }, [gameOver, generateFood, showRottenFoodComment, foodEaten, addQuote]);
+  }, [gameOver, generateFood, showRottenFoodComment, foodEaten, addQuote, foodFrequency]);
 
   // Handle game over
   useEffect(() => {
@@ -687,7 +750,7 @@ function SnakeGame({ onGameOver }) {
             <StatItem>Score: <span>{score}</span></StatItem>
           </GameInfo>
           <GameInfo>
-            <StatItem>Food: <span>{foodEaten}/10</span></StatItem>
+            <StatItem>Food: <span>{foodEaten}</span></StatItem>
             <StatItem>Rotten: <span>{rottenFoodEaten}</span></StatItem>
           </GameInfo>
         </GameStatsContainer>
