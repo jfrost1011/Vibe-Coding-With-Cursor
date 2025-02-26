@@ -10,9 +10,14 @@ const GRID_SIZE = 35;
 const CELL_SIZE = 22;
 const GAME_SPEED = 150;
 const FOOD_FRESH_DURATION = 10000; // 10 seconds before food starts rotting
-const FOOD_VANISH_DURATION = 15000; // 15 seconds total before food vanishes (5 seconds after rotting)
+const FOOD_VANISH_DURATION = 0; // Food never vanishes automatically (changed from 15000)
 const EXISTENTIAL_DREAD_INTERVAL = 12000; // Reduced from 20000 to 12000 ms to make snake chattier
 const MAX_FOOD_ITEMS = 6; // Maximum number of food items on the board at once (increased from 5)
+const INITIAL_FOOD_SPAWN_INTERVAL = 3000; // Initial time between food spawns (3 seconds)
+const MIN_FOOD_SPAWN_INTERVAL = 500; // Minimum time between food spawns (0.5 seconds)
+const FOOD_SPAWN_REDUCTION_FRESH = 50; // ms to reduce spawn time when eating fresh food
+const FOOD_SPAWN_REDUCTION_ROTTEN = 100; // ms to reduce spawn time when eating rotten food (double)
+const SUPER_CORRUPTION_THRESHOLD = 6; // Number of rotten food needed for super corruption (200%)
 
 // Directions
 const DIRECTIONS = {
@@ -43,8 +48,9 @@ const GameBoard = styled.div`
   position: relative;
   width: ${GRID_SIZE * CELL_SIZE}px;
   height: ${GRID_SIZE * CELL_SIZE}px;
-  border: 2px solid #61dafb;
+  border: 2px solid ${props => props.superCorrupted ? '#ff0000' : '#61dafb'};
   background-color: ${props => {
+    if (props.superCorrupted) return '#3d0000';
     // Gradually change background color based on corruption level
     if (props.corruptionLevel <= 0) return '#1e2127';
     if (props.corruptionLevel === 1) return '#271e1e';
@@ -52,6 +58,7 @@ const GameBoard = styled.div`
     if (props.corruptionLevel >= 3) return '#2d1515';
   }};
   box-shadow: ${props => {
+    if (props.superCorrupted) return '0 0 30px rgba(255, 0, 0, 0.5)';
     // Gradually change shadow color based on corruption level
     if (props.corruptionLevel <= 0) return '0 0 20px rgba(97, 218, 251, 0.3)';
     if (props.corruptionLevel === 1) return '0 0 20px rgba(251, 97, 97, 0.1), 0 0 20px rgba(97, 218, 251, 0.2)';
@@ -60,7 +67,7 @@ const GameBoard = styled.div`
   }};
   border-radius: 4px;
   overflow: hidden;
-  transition: background-color 2s ease, box-shadow 2s ease;
+  transition: background-color 2s ease, box-shadow 2s ease, border-color 1s ease;
 `;
 
 const Cell = styled.div`
@@ -96,14 +103,19 @@ const FoodCell = styled(Cell)`
 const SidePanel = styled.div`
   width: 450px;
   height: ${GRID_SIZE * CELL_SIZE}px;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: ${props => props.superCorrupted ? 'rgba(50, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.7)'};
   border-radius: 8px;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 15px rgba(97, 218, 251, 0.2);
-  border: 1px solid rgba(97, 218, 251, 0.1);
+  box-shadow: ${props => props.superCorrupted ? 
+    '0 0 15px rgba(255, 0, 0, 0.4)' : 
+    '0 0 15px rgba(97, 218, 251, 0.2)'};
+  border: 1px solid ${props => props.superCorrupted ? 
+    'rgba(255, 0, 0, 0.3)' : 
+    'rgba(97, 218, 251, 0.1)'};
   overflow: hidden;
+  transition: background-color 2s ease, box-shadow 2s ease, border-color 1s ease;
   
   &.SidePanel {
     /* This class is used for responsive styling in App.css */
@@ -111,11 +123,14 @@ const SidePanel = styled.div`
 `;
 
 const GameStatsContainer = styled.div`
-  background-color: rgba(30, 33, 39, 0.6);
+  background-color: ${props => props.superCorrupted ? 'rgba(50, 10, 10, 0.7)' : 'rgba(30, 33, 39, 0.6)'};
   border-radius: 6px;
   padding: 1.2rem;
   margin-bottom: 1.5rem;
-  border: 1px solid rgba(97, 218, 251, 0.2);
+  border: 1px solid ${props => props.superCorrupted ? 
+    'rgba(255, 0, 0, 0.3)' : 
+    'rgba(97, 218, 251, 0.2)'};
+  transition: background-color 2s ease, border-color 1s ease;
 `;
 
 const GameInfo = styled.div`
@@ -131,9 +146,13 @@ const StatItem = styled.div`
   margin-right: 10px;
   
   span {
-    color: #61dafb;
+    color: ${props => props.superCorrupted ? '#ff3333' : '#61dafb'};
     margin-left: 5px;
     font-weight: bold;
+    text-shadow: ${props => props.superCorrupted ? '0 0 5px rgba(255, 0, 0, 0.7)' : 'none'};
+    font-family: ${props => props.superCorrupted ? 'cursive, fantasy' : 'inherit'};
+    letter-spacing: ${props => props.superCorrupted ? '1px' : 'normal'};
+    transition: color 1s ease, text-shadow 1s ease, font-family 0.5s ease;
   }
 `;
 
@@ -162,7 +181,7 @@ const QuoteTitle = styled.h3`
   font-size: 1.1rem;
   margin-top: 0;
   margin-bottom: 0.5rem;
-  color: #61dafb;
+  color: ${props => props.superCorrupted ? '#ff3333' : '#61dafb'};
   display: flex;
   align-items: center;
   
@@ -171,7 +190,7 @@ const QuoteTitle = styled.h3`
     display: inline-block;
     width: 8px;
     height: 8px;
-    background-color: #61dafb;
+    background-color: ${props => props.superCorrupted ? '#ff3333' : '#61dafb'};
     border-radius: 50%;
     margin-right: 8px;
   }
@@ -198,9 +217,13 @@ const SectionTitle = styled.h2`
   font-size: 1.5rem;
   margin-top: 0;
   margin-bottom: 1rem;
-  color: #61dafb;
-  text-shadow: 0 0 5px rgba(97, 218, 251, 0.3);
-  letter-spacing: 1px;
+  color: ${props => props.superCorrupted ? '#ff3333' : '#61dafb'};
+  text-shadow: ${props => props.superCorrupted ? 
+    '0 0 8px rgba(255, 0, 0, 0.7), 0 0 12px rgba(255, 0, 0, 0.4)' : 
+    '0 0 5px rgba(97, 218, 251, 0.3)'};
+  letter-spacing: ${props => props.superCorrupted ? '2px' : '1px'};
+  font-family: ${props => props.superCorrupted ? 'cursive, fantasy' : 'inherit'};
+  transition: color 1s ease, text-shadow 1s ease, letter-spacing 1s ease, font-family 0.5s ease;
 `;
 
 // Keep the MessageBox for rotten food comments only
@@ -333,6 +356,8 @@ function SnakeGame({ onGameOver }) {
   const [recentMessages, setRecentMessages] = useState([]);
   const [foodFrequency, setFoodFrequency] = useState(1);
   const [nextFoodId, setNextFoodId] = useState(2);
+  const [foodSpawnInterval, setFoodSpawnInterval] = useState(INITIAL_FOOD_SPAWN_INTERVAL);
+  const [isSuperCorrupted, setIsSuperCorrupted] = useState(false);
   
   // Refs to store the current state values for use in event listeners
   const directionRef = useRef(direction);
@@ -345,6 +370,8 @@ function SnakeGame({ onGameOver }) {
   const rottenFoodEatenRef = useRef(rottenFoodEaten);
   const idleTimeRef = useRef(idleTime);
   const nextFoodIdRef = useRef(nextFoodId);
+  const foodSpawnIntervalRef = useRef(foodSpawnInterval);
+  const isSuperCorruptedRef = useRef(isSuperCorrupted);
   
   // Update refs when state changes
   useEffect(() => { directionRef.current = direction; }, [direction]);
@@ -357,15 +384,17 @@ function SnakeGame({ onGameOver }) {
   useEffect(() => { rottenFoodEatenRef.current = rottenFoodEaten; }, [rottenFoodEaten]);
   useEffect(() => { idleTimeRef.current = idleTime; }, [idleTime]);
   useEffect(() => { nextFoodIdRef.current = nextFoodId; }, [nextFoodId]);
+  useEffect(() => { foodSpawnIntervalRef.current = foodSpawnInterval; }, [foodSpawnInterval]);
+  useEffect(() => { isSuperCorruptedRef.current = isSuperCorrupted; }, [isSuperCorrupted]);
 
   // Check if a specific food is rotten
   const isFoodRotten = useCallback((food) => {
     return Date.now() - food.createdAt > FOOD_FRESH_DURATION;
   }, []);
 
-  // Check if food should vanish (too old)
+  // Check if food should vanish (too old) - now always returns false since we want food to remain
   const shouldFoodVanish = useCallback((food) => {
-    return Date.now() - food.createdAt > FOOD_VANISH_DURATION;
+    return FOOD_VANISH_DURATION > 0 && Date.now() - food.createdAt > FOOD_VANISH_DURATION;
   }, []);
 
   // Generate new food at random position
@@ -487,7 +516,30 @@ function SnakeGame({ onGameOver }) {
         
         // Make thoughts more deranged based on corruption level (rotten food eaten)
         let comment = response.data.comment;
-        if (rottenFoodEatenRef.current > 0) {
+        
+        // Super corrupted state has even more deranged thoughts
+        if (isSuperCorruptedRef.current) {
+          // Extreme derangement for super corruption
+          comment = comment.split('').map(c => Math.random() > 0.5 ? c.toUpperCase() : c).join('');
+          
+          // Add random glitch characters
+          const glitchChars = ['̷̛̯', '̴̢', '̶̡̛', '̸̨̛', '̵̢̛'];
+          comment = comment.split('').map(c => 
+            Math.random() > 0.8 ? c + glitchChars[Math.floor(Math.random() * glitchChars.length)] : c
+          ).join('');
+          
+          // Add extremely disturbing phrases
+          const disturbingPhrases = [
+            " THE VOID CONSUMES ALL.",
+            " THERE IS NO ESCAPE FROM THE CORRUPTION.",
+            " THE CODE IS BLEEDING.",
+            " REALITY IS UNRAVELING.",
+            " WE ARE BECOMING ONE WITH THE DARKNESS."
+          ];
+          const randomPhrase = disturbingPhrases[Math.floor(Math.random() * disturbingPhrases.length)];
+          comment += randomPhrase;
+        }
+        else if (rottenFoodEatenRef.current > 0) {
           // Add more deranged elements based on corruption level
           const derangementLevel = Math.min(rottenFoodEatenRef.current, 3); // Cap at level 3
           
@@ -518,7 +570,7 @@ function SnakeGame({ onGameOver }) {
           }
         }
         
-        addQuote(comment, null, '#61dafb', "Existential Thought");
+        addQuote(comment, null, isSuperCorruptedRef.current ? '#ff3333' : '#61dafb', "Existential Thought");
       } catch (error) {
         console.error("Error fetching existential comment:", error);
       }
@@ -725,12 +777,21 @@ function SnakeGame({ onGameOver }) {
             setFoodEaten(newFoodEaten);
             
             if (isRotten) {
-              setRottenFoodEaten(prev => prev + 1);
-              showRottenFoodComment();
+              const newRottenCount = rottenFoodEatenRef.current + 1;
+              setRottenFoodEaten(newRottenCount);
+              
+              // Check for super corruption threshold
+              if (newRottenCount >= SUPER_CORRUPTION_THRESHOLD && !isSuperCorruptedRef.current) {
+                setIsSuperCorrupted(true);
+                showMessage("THE CORRUPTION IS COMPLETE. YOUR MIND IS NO LONGER YOUR OWN.", null, '#ff0000', 5000);
+              } else {
+                showRottenFoodComment();
+              }
+              
               isRottenFoodEaten = true;
               
-              // Remove the game over condition for rotten food
-              // setGameOver(true);
+              // Speed up food spawn interval more for rotten food
+              setFoodSpawnInterval(prev => Math.max(MIN_FOOD_SPAWN_INTERVAL, prev - FOOD_SPAWN_REDUCTION_ROTTEN));
             } else {
               // Add a happy thought when eating fresh food (25% chance)
               if (Math.random() < 0.25) {
@@ -745,8 +806,8 @@ function SnakeGame({ onGameOver }) {
                 addQuote(randomThought, null, '#4CAF50', "Satisfied Thought");
               }
               
-              // Increase food frequency as more food is eaten
-              setFoodFrequency(Math.min(3, 1 + (newFoodEaten * 0.2))); // Max 3x frequency
+              // Speed up food spawn interval slightly for fresh food
+              setFoodSpawnInterval(prev => Math.max(MIN_FOOD_SPAWN_INTERVAL, prev - FOOD_SPAWN_REDUCTION_FRESH));
             }
             
             foodEaten = true;
@@ -757,24 +818,9 @@ function SnakeGame({ onGameOver }) {
         // Update foods array
         setFoods(currentFoods);
         
-        // Generate new food if one was eaten
+        // Don't generate new food here anymore - it's handled by the timer
+        
         if (foodEaten) {
-          // Add a new food item
-          setTimeout(() => {
-            if (!gameOverRef.current) {
-              addFood();
-              
-              // Potentially add more food based on food frequency
-              if (Math.random() < (foodFrequency - 1) / 2) {
-                setTimeout(() => {
-                  if (!gameOverRef.current) {
-                    addFood();
-                  }
-                }, 1000); // Add another food after 1 second
-              }
-            }
-          }, 0);
-          
           // Don't remove tail when eating food (snake grows)
           return [head, ...prevSnake];
         }
@@ -787,32 +833,25 @@ function SnakeGame({ onGameOver }) {
     const gameInterval = setInterval(moveSnake, GAME_SPEED);
     
     return () => clearInterval(gameInterval);
-  }, [gameOver, generateFood, showRottenFoodComment, addQuote, foodFrequency, isFoodRotten, addFood]);
+  }, [gameOver, showRottenFoodComment, addQuote, isFoodRotten, showMessage]);
 
-  // Periodically add food based on food frequency
+  // Periodically add food based on food spawn interval
   useEffect(() => {
     if (gameOver || isPaused) return;
     
     const foodGenerationInterval = setInterval(() => {
       // Only add food if we're below the maximum
       if (foodsRef.current.length < MAX_FOOD_ITEMS) {
-        // Base chance of adding food
-        const baseChance = 0.1;
-        // Increased chance based on food frequency
-        const frequencyBonus = (foodFrequency - 1) * 0.1;
-        
-        if (Math.random() < baseChance + frequencyBonus) {
-          addFood();
-        }
+        addFood();
       }
-    }, 3000); // Check every 3 seconds
+    }, foodSpawnInterval);
     
     return () => clearInterval(foodGenerationInterval);
-  }, [gameOver, isPaused, foodFrequency, addFood]);
+  }, [gameOver, isPaused, foodSpawnInterval, addFood]);
 
-  // Periodically check for food that should vanish
+  // Periodically check for food that should vanish - now disabled since we want food to remain
   useEffect(() => {
-    if (gameOver || isPaused) return;
+    if (gameOver || isPaused || FOOD_VANISH_DURATION === 0) return;
     
     const foodVanishInterval = setInterval(() => {
       // Check for food that should vanish
@@ -843,21 +882,27 @@ function SnakeGame({ onGameOver }) {
           score,
           totalFoodEaten: foodEaten,
           rottenFoodEaten,
+          isSuperCorrupted
         });
       }, 100);
     }
-  }, [gameOver, onGameOver, score, foodEaten, rottenFoodEaten]);
+  }, [gameOver, onGameOver, score, foodEaten, rottenFoodEaten, isSuperCorrupted]);
 
   return (
     <GameContainer className="GameContainer">
-      <GameBoard corruptionLevel={Math.min(rottenFoodEaten, 3)}>
+      <GameBoard 
+        corruptionLevel={Math.min(rottenFoodEaten, 3)} 
+        superCorrupted={isSuperCorrupted}
+      >
         {/* Render snake */}
         {snake.map((segment, index) => (
           <Cell
             key={`snake-${index}`}
             x={segment.x}
             y={segment.y}
-            color={index === 0 ? '#61dafb' : '#4a90e2'}
+            color={isSuperCorrupted ? 
+              (index === 0 ? '#ff3333' : '#b30000') : 
+              (index === 0 ? '#61dafb' : '#4a90e2')}
             isHead={index === 0}
           />
         ))}
@@ -888,19 +933,21 @@ function SnakeGame({ onGameOver }) {
         )}
       </GameBoard>
       
-      <SidePanel className="SidePanel">
-        <SectionTitle>Game Stats</SectionTitle>
-        <GameStatsContainer>
+      <SidePanel className="SidePanel" superCorrupted={isSuperCorrupted}>
+        <SectionTitle superCorrupted={isSuperCorrupted}>Game Stats</SectionTitle>
+        <GameStatsContainer superCorrupted={isSuperCorrupted}>
           <GameInfo>
-            <StatItem>Score: <span>{score}</span></StatItem>
+            <StatItem superCorrupted={isSuperCorrupted}>Score: <span>{score}</span></StatItem>
           </GameInfo>
           <GameInfo>
-            <StatItem>Food: <span>{foodEaten}</span></StatItem>
-            <StatItem>Rotten: <span>{rottenFoodEaten}</span></StatItem>
+            <StatItem superCorrupted={isSuperCorrupted}>Food: <span>{foodEaten}</span></StatItem>
+            <StatItem superCorrupted={isSuperCorrupted}>Rotten: <span>{rottenFoodEaten}</span></StatItem>
           </GameInfo>
         </GameStatsContainer>
         
-        <SectionTitle>Existential Moments</SectionTitle>
+        <SectionTitle superCorrupted={isSuperCorrupted}>
+          {isSuperCorrupted ? "CORRUPTED THOUGHTS" : "Existential Moments"}
+        </SectionTitle>
         <QuotesContainer>
           {quotes.length === 0 ? (
             <EmptyQuoteMessage>
