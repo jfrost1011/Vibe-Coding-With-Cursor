@@ -19,6 +19,8 @@ const AppContainer = styled.div`
   font-family: 'Courier New', monospace;
   position: relative;
   overflow: hidden;
+  padding: 20px;
+  box-sizing: border-box;
 `;
 
 const GameTitle = styled.h1`

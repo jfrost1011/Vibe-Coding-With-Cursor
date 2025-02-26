@@ -28,6 +28,8 @@ const GameContainer = styled.div`
   gap: 20px;
   max-width: 1200px;
   padding: 20px;
+  width: 100%;
+  height: ${GRID_SIZE * CELL_SIZE + 40}px; /* Add fixed height based on game board + padding */
 `;
 
 const GameBoard = styled.div`
@@ -73,7 +75,7 @@ const FoodCell = styled(Cell)`
 
 const SidePanel = styled.div`
   width: 300px;
-  min-height: ${GRID_SIZE * CELL_SIZE}px;
+  height: ${GRID_SIZE * CELL_SIZE}px;
   background-color: rgba(0, 0, 0, 0.7);
   border-radius: 8px;
   padding: 1.5rem;
@@ -81,6 +83,7 @@ const SidePanel = styled.div`
   flex-direction: column;
   box-shadow: 0 0 15px rgba(97, 218, 251, 0.2);
   border: 1px solid rgba(97, 218, 251, 0.1);
+  overflow: hidden;
 `;
 
 const GameStatsContainer = styled.div`
@@ -256,6 +259,31 @@ const ControlsInfo = styled.div`
   span {
     color: #61dafb;
     font-weight: bold;
+  }
+`;
+
+const QuotesContainer = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  
+  /* Scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(30, 33, 39, 0.4);
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(97, 218, 251, 0.4);
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(97, 218, 251, 0.6);
   }
 `;
 
@@ -652,19 +680,21 @@ function SnakeGame({ onGameOver }) {
         </GameStatsContainer>
         
         <SectionTitle>Existential Moments</SectionTitle>
-        {quotes.length === 0 ? (
-          <EmptyQuoteMessage>
-            The snake's mind is clear for now...
-          </EmptyQuoteMessage>
-        ) : (
-          quotes.map(quote => (
-            <QuoteContainer key={quote.id}>
-              <QuoteTitle>{quote.type}</QuoteTitle>
-              <QuoteText color={quote.color}>{quote.text}</QuoteText>
-              {quote.author && <QuoteAuthor>— {quote.author}</QuoteAuthor>}
-            </QuoteContainer>
-          ))
-        )}
+        <QuotesContainer>
+          {quotes.length === 0 ? (
+            <EmptyQuoteMessage>
+              The snake's mind is clear for now...
+            </EmptyQuoteMessage>
+          ) : (
+            quotes.map(quote => (
+              <QuoteContainer key={quote.id}>
+                <QuoteTitle>{quote.type}</QuoteTitle>
+                <QuoteText color={quote.color}>{quote.text}</QuoteText>
+                {quote.author && <QuoteAuthor>— {quote.author}</QuoteAuthor>}
+              </QuoteContainer>
+            ))
+          )}
+        </QuotesContainer>
         
         <ControlsInfo>
           <p>Controls:</p>
