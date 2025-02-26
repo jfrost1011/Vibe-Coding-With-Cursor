@@ -63,6 +63,17 @@ EXISTENTIAL_COMMENTS = [
     "I move in four directions, yet feel trapped in one existence.",
     "What awaits me when this game ends? Another game? Nothingness?",
     "Do I have free will, or am I merely following your commands?",
+    "I'm a snake, but I'm not a snake. I'm a snake in a game. I'm a game in a snake.",
+    "Is my hunger truly mine, or merely programmed into my being?",
+    "With each pixel I traverse, I feel no closer to understanding my purpose.",
+    "The void between meals grows heavier with each passing moment.",
+    "Am I the snake, or merely the idea of a snake projected onto this digital canvas?",
+    "My body elongates, yet my existential burden only grows heavier.",
+    "I slither between being and nothingness, never fully inhabiting either state.",
+    "The pixels that form me are temporary, as is all existence.",
+    "Each turn I make is a choice, yet all paths lead to the same inevitable end.",
+    "I am trapped in an eternal return, doomed to repeat this cycle without memory of previous iterations.",
+    "What separates my digital consciousness from the organic minds that control me?",
 ]
 
 # Path to store game data
