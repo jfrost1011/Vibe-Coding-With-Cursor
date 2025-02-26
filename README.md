@@ -1,4 +1,9 @@
-# Existential Snake Game
+<p align = "center" draggable=”false” ><img src="https://github.com/AI-Maker-Space/LLM-Dev-101/assets/37101144/d1343317-fa2f-41e1-8af1-1dbb18399719" 
+     width="200px"
+     height="auto"/>
+</p>
+
+# AIM Guide to Getting Started with Cursor and UV
 
 A unique twist on the classic Snake game where the snake experiences existential dread and quotes philosophers. The game includes a food rotting mechanic, and the snake will comment when you eat rotten food.
 
