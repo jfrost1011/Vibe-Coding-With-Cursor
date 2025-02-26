@@ -18,6 +18,7 @@ const MIN_FOOD_SPAWN_INTERVAL = 500; // Minimum time between food spawns (0.5 se
 const FOOD_SPAWN_REDUCTION_FRESH = 50; // ms to reduce spawn time when eating fresh food
 const FOOD_SPAWN_REDUCTION_ROTTEN = 100; // ms to reduce spawn time when eating rotten food (double)
 const SUPER_CORRUPTION_THRESHOLD = 200; // Percentage corruption for super corruption state (200%)
+const ROTTEN_FOOD_START = 10; // Rotten food starts appearing after this many food items have been eaten
 const CORRUPTION_PER_ROTTEN_FOOD = 33.33; // Each rotten food adds 33.33% corruption (6 rotten food = 200%)
 
 // Directions
@@ -114,6 +115,8 @@ const FoodCell = styled(Cell)`
   animation: ${props => {
     if (props.isRotten) {
       return props.superCorrupted ? 'rottenPulseCorrupted 0.8s infinite' : 'pulse 1s infinite';
+    } else if (props.isAboutToRot) {
+      return 'aboutToRotPulse 1.5s infinite';
     } else {
       return props.superCorrupted ? 'freshGlowCorrupted 2s infinite' : 'glow 2s infinite';
     }
@@ -123,6 +126,12 @@ const FoodCell = styled(Cell)`
     0% { transform: scale(1); box-shadow: 0 0 5px rgba(139, 69, 19, 0.6); }
     50% { transform: scale(1.1); box-shadow: 0 0 10px rgba(139, 69, 19, 0.8); }
     100% { transform: scale(1); box-shadow: 0 0 5px rgba(139, 69, 19, 0.6); }
+  }
+  
+  @keyframes aboutToRotPulse {
+    0% { transform: scale(1); box-shadow: 0 0 5px rgba(255, 165, 0, 0.6); background-color: #4CAF50; }
+    50% { transform: scale(1.1); box-shadow: 0 0 10px rgba(255, 165, 0, 0.8); background-color: #FFA500; }
+    100% { transform: scale(1); box-shadow: 0 0 5px rgba(255, 165, 0, 0.6); background-color: #4CAF50; }
   }
   
   @keyframes rottenPulseCorrupted {
@@ -436,7 +445,20 @@ function SnakeGame({ onGameOver }) {
 
   // Check if a specific food is rotten
   const isFoodRotten = useCallback((food) => {
+    // Only allow food to rot if player has eaten enough food items
+    if (foodEatenRef.current < ROTTEN_FOOD_START) {
+      return false;
+    }
     return Date.now() - food.createdAt > FOOD_FRESH_DURATION;
+  }, []);
+
+  // Check if food is about to rot (within 3 seconds of rotting)
+  const isAboutToRot = useCallback((food) => {
+    if (foodEatenRef.current < ROTTEN_FOOD_START) {
+      return false;
+    }
+    const timeUntilRot = FOOD_FRESH_DURATION - (Date.now() - food.createdAt);
+    return timeUntilRot > 0 && timeUntilRot < 3000; // Within 3 seconds of rotting
   }, []);
 
   // Check if food should vanish (too old) - now always returns false since we want food to remain
@@ -823,12 +845,22 @@ function SnakeGame({ onGameOver }) {
             const newFoodEaten = foodEatenRef.current + 1;
             setFoodEaten(newFoodEaten);
             
+            // Show notification when rotten food starts appearing
+            if (newFoodEaten === ROTTEN_FOOD_START) {
+              showMessage("Your hunger grows... and the food begins to rot. Be careful what you consume.", null, '#FFA500', 4000);
+              addQuote("I sense a change in the world. The food is no longer as pure as it once was.", null, '#FFA500', "Warning");
+            }
+            
             if (isRotten) {
               const newRottenCount = rottenFoodEatenRef.current + 1;
               setRottenFoodEaten(newRottenCount);
               
-              // Calculate new corruption percentage
-              const newCorruptionPercent = Math.min(CORRUPTION_PER_ROTTEN_FOOD * newRottenCount, SUPER_CORRUPTION_THRESHOLD);
+              // Calculate new corruption percentage based on ratio of rotten to total food
+              // Formula: (rotten food / total food) * 400 - this gives 200% corruption when half the food eaten is rotten
+              const newCorruptionPercent = Math.min(
+                ((newRottenCount / newFoodEaten) * 400), 
+                SUPER_CORRUPTION_THRESHOLD
+              );
               setCorruptionPercent(newCorruptionPercent);
               
               // Check for super corruption threshold
@@ -844,6 +876,21 @@ function SnakeGame({ onGameOver }) {
               // Speed up food spawn interval more for rotten food
               setFoodSpawnInterval(prev => Math.max(MIN_FOOD_SPAWN_INTERVAL, prev - FOOD_SPAWN_REDUCTION_ROTTEN));
             } else {
+              // Recalculate corruption percentage when eating fresh food (since ratio changes)
+              if (rottenFoodEatenRef.current > 0) {
+                const newCorruptionPercent = Math.min(
+                  ((rottenFoodEatenRef.current / newFoodEaten) * 400),
+                  SUPER_CORRUPTION_THRESHOLD
+                );
+                setCorruptionPercent(newCorruptionPercent);
+                
+                // Check if we should exit super corruption state
+                if (newCorruptionPercent < SUPER_CORRUPTION_THRESHOLD && isSuperCorruptedRef.current) {
+                  setIsSuperCorrupted(false);
+                  showMessage("The corruption recedes slightly, but your mind remains forever changed.", null, '#ffa500', 3000);
+                }
+              }
+              
               // Add a happy thought when eating fresh food (25% chance)
               if (Math.random() < 0.25) {
                 const freshFoodThoughts = [
@@ -984,6 +1031,7 @@ function SnakeGame({ onGameOver }) {
             x={food.x}
             y={food.y}
             isRotten={isFoodRotten(food)}
+            isAboutToRot={isAboutToRot(food)}
             superCorrupted={isSuperCorrupted}
             corruptionPercent={corruptionPercent}
           />
@@ -1015,11 +1063,18 @@ function SnakeGame({ onGameOver }) {
             <StatItem superCorrupted={isSuperCorrupted}>Food: <span>{foodEaten}</span></StatItem>
             <StatItem superCorrupted={isSuperCorrupted}>Rotten: <span>{rottenFoodEaten}</span></StatItem>
             <StatItem superCorrupted={isSuperCorrupted}>Corruption: <span>{Math.floor(corruptionPercent)}%</span></StatItem>
+            {foodEaten < ROTTEN_FOOD_START && (
+              <StatItem superCorrupted={isSuperCorrupted}>
+                <span style={{ color: '#ffd700', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                  ({ROTTEN_FOOD_START - foodEaten} until corruption)
+                </span>
+              </StatItem>
+            )}
           </GameInfo>
         </GameStatsContainer>
         
         <SectionTitle superCorrupted={isSuperCorrupted}>
-          {isSuperCorrupted ? "CORRUPTED THOUGHTS" : "Existential Moments"}
+          {isSuperCorrupted ? "CORRUPTED THOUGHTS" : foodEaten >= ROTTEN_FOOD_START ? "Corrupting Thoughts" : "Existential Moments"}
         </SectionTitle>
         <QuotesContainer>
           {quotes.length === 0 ? (
