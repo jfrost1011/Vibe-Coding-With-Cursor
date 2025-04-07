@@ -3,45 +3,104 @@
      height="auto"/>
 </p>
 
-# 🚀 Setting Up Cursor and UV
+# 🐍 Existential Snake Game - Find Meaning While Eating Food
 
-This guide will help you set up Cursor (an AI-powered code editor) and UV (a fast Python package installer) for your development environment.
+What's up, code warriors! Ready to play a game that will make you question your very existence? Say hello to **Existential Snake** - the most philosophical reptile you'll ever meet! 🧠💭
 
-## 📋 Table of Contents
+## 🔥 What Makes This Snake Game So Dope?
 
-- [Prerequisites](#prerequisites) 🛠️
-- [Installing Cursor](#cursor) 🧠
-- [Installing UV](#uv) ⚡
-- [Why Use UV Instead of pip](#why-uv) 🔍
-- [UV Commands Reference](#commands) 📝
-- [Troubleshooting](#troubleshooting) 🔧
+This ain't your grandma's Snake game! Our slithery friend is having a full-blown existential crisis and wants to chat about the meaning of life while you help it eat.
 
-## 🛠️ Prerequisites <a name="prerequisites"></a>
+- 🤔 **Philosophical Snake**: Your snake drops deep thoughts and quotes famous philosophers while you play
+- 🍎 **Food Rotting System**: Fresh food = good points, rotten food = fewer points + existential commentary
+- 💬 **Deep Conversations**: The snake will judge your life choices when you eat rotten food
+- 🏆 **Multiple Endings**: Your fate depends on your food choices - will you choose the path of freshness?
+- ✨ **Sick Visuals**: Gorgeous UI with glowy effects that'll make your eyeballs happy
 
-Before you begin, make sure you have the following installed:
-- [Python](https://www.python.org/) (v3.8 or higher)
+## 🎮 How to Play This Bad Boy
 
-## 🧠 Installing Cursor <a name="cursor"></a>
+### 🚀 Quick Launch (For The Impatient)
 
-Cursor is an AI-powered code editor that enhances your coding experience with intelligent features.
+We made some sweet scripts that do all the boring setup stuff for you:
 
-1. Visit [cursor.sh](https://cursor.sh/) and download the installer for your OS
-2. Run the installer and follow the prompts
-3. Launch Cursor and open your project folder
-4. Enjoy the power of AI-assisted coding! ✨
+- **Linux/macOS Homies**:
+  ```
+  chmod +x setup.sh
+  ./setup.sh
+  ```
 
-### Key Cursor Features
+- **Windows Gang** (Run this in PowerShell):
+  ```
+  .\setup.ps1
+  ```
 
-- **AI Code Completion**: Get intelligent code suggestions as you type
-- **Natural Language Commands**: Ask for code changes in plain English
-- **Context-Aware Assistance**: The AI understands your codebase
-- **Integrated Chat**: Ask questions about your code directly in the editor
+Just follow the on-screen instructions, and you'll be philosophizing in no time!
 
-## ⚡ Installing UV <a name="uv"></a>
+### 🛠️ Manual Setup (For Control Freaks)
 
-UV is a fast, reliable Python package installer and resolver.
+#### Backend Setup
 
-### Installation Commands
+1. Get your backend groove on:
+   ```
+   cd backend
+   ```
+
+2. Activate that virtual environment:
+   - **Windows CMD**: `.venv\Scripts\activate`
+   - **Windows PowerShell**: `.\.venv\Scripts\Activate.ps1`
+   - **macOS/Linux**: `source .venv/bin/activate`
+
+3. Fire up the server:
+   ```
+   uv run main.py
+   ```
+
+   Your backend will be chillin' at `http://localhost:8000`.
+
+#### Frontend Setup
+
+1. Open a new terminal window and head to the frontend:
+   ```
+   cd frontend
+   ```
+
+2. Start the React magic:
+   ```
+   npm start
+   ```
+
+   The frontend will be waiting for you at `http://localhost:3000`.
+
+## 🎲 Game Rules & Controls
+
+### 🎯 Controls
+- **Arrow Keys** or **WASD**: Move your existential reptile
+- **Spacebar**: Pause the game when you need a reality break
+
+### 🏆 How to Win
+1. Eat 10 pieces of food without crashing
+2. Get the "good ending" by making healthy choices (less than 50% rotten food)
+3. Question your existence along the way
+
+### 🧪 Game Mechanics
+- **Fresh Food** = 3 points (yum!)
+- **Rotten Food** = 1 point (food rots after 10 seconds)
+- **Existential Moments**: Every 12 seconds, your snake drops some deep thoughts
+- **Win Condition**: Gobble up 10 tasty morsels
+- **Game Over**: Crash into a wall or yourself (just like in real life!)
+
+## 📱 Setting Up Your Dev Environment
+
+### 🧠 Installing Cursor
+
+Cursor is the AI-powered code editor that'll make your life way easier:
+
+1. Hit up [cursor.sh](https://cursor.sh/) and download that bad boy
+2. Install it and let the AI coding magic begin!
+
+### ⚡ Installing UV
+
+UV is like pip but on steroids - it's wicked fast:
 
 - **Windows** (Run in PowerShell):
   ```
@@ -53,81 +112,26 @@ UV is a fast, reliable Python package installer and resolver.
   curl -sSf https://astral.sh/uv/install.sh | sh
   ```
 
-After installation, you may need to restart your terminal or add UV to your PATH.
+## 🔧 Troubleshooting
 
-## 🔍 Why Use UV Instead of pip <a name="why-uv"></a>
+- **Game Being Slow**: Close those 47 browser tabs you have open!
+- **Backend Not Connecting**: Make sure your backend server is running (`http://localhost:8000`)
+- **Snake Not Moving**: Check that you're using arrow keys or WASD (not your mind powers)
+- **Existential Crisis**: That's normal, the game is working as intended
 
-UV offers several advantages over traditional pip:
+## 🧙‍♂️ Tips & Tricks
 
-- **Speed**: UV is 10-100x faster than pip
-- **Reliability**: Better dependency resolution
-- **Compatibility**: Works with pip's commands
-- **Safety**: Written in a safe language
-- **Environment Management**: The `uv run` command ensures everything runs in the correct environment
-
-## 📝 UV Commands Reference <a name="commands"></a>
-
-Here are some common UV commands to get you started:
-
-### Virtual Environment Management
-
-Create a new virtual environment:
-```
-uv venv
-```
-
-Activate the virtual environment:
-- On Windows (Command Prompt):
-  ```
-  .venv\Scripts\activate
-  ```
-- On Windows (PowerShell):
-  ```
-  .\.venv\Scripts\Activate.ps1
-  ```
-- On macOS/Linux:
-  ```
-  source .venv/bin/activate
-  ```
-
-### Package Management
-
-Install packages:
-```
-uv pip install <package-name>
-```
-
-Install from requirements file:
-```
-uv pip install -r requirements.txt
-```
-
-### Running Python Scripts
-
-Run a Python script in the virtual environment:
-```
-uv run script.py
-```
-
-## 🔧 Troubleshooting <a name="troubleshooting"></a>
-
-### Cursor Issues
-
-- **Performance**: If Cursor is running slowly, try closing other applications
-- **AI Features Not Working**: Check your internet connection
-- **Editor Crashes**: Make sure you have the latest version installed
-
-### UV Issues
-
-- **Installation Fails**: Make sure you have the necessary permissions
-- **Command Not Found**: Ensure UV is in your PATH
-- **Virtual Environment Issues**: 
-  - On Windows PowerShell: use `.\.venv\Scripts\Activate.ps1`
-  - On Windows Command Prompt: use `.venv\Scripts\activate`
-  - On macOS/Linux: use `source .venv/bin/activate`
-
-For more help with UV, refer to the [official UV documentation](https://github.com/astral-sh/uv).
+- Try not to eat too much rotten food unless you want the depressing ending
+- When the snake gets philosophical, take a moment to reflect on your own existence
+- The faster you react, the less likely food will rot before you get to it
+- If you're feeling stuck in the game (or in life), sometimes changing direction helps
 
 ---
 
-Happy coding! 💻✨
+## 🚀 Ready to Question Reality?
+
+Stop reading and start playing! Your existential journey awaits... 
+
+*"To play, or not to play—that is the question."* - Shakespeare (probably)
+
+Happy slithering! 🐍✨

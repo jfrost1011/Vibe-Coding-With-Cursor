@@ -10,12 +10,12 @@ const EndContainer = styled.div`
   align-items: center;
   justify-content: center;
   padding: 2.5rem;
-  background-color: rgba(0, 0, 0, 0.8);
-  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.9);
+  border-radius: 0px;
   max-width: 550px;
   width: 90%;
-  box-shadow: 0 0 30px rgba(97, 218, 251, 0.4);
-  border: 1px solid rgba(97, 218, 251, 0.2);
+  box-shadow: 0 0 30px rgba(139, 0, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(139, 0, 0, 0.3);
   animation: fadeIn 0.8s ease, glowPulse 3s infinite alternate;
   
   @keyframes fadeIn {
@@ -24,8 +24,22 @@ const EndContainer = styled.div`
   }
   
   @keyframes glowPulse {
-    from { box-shadow: 0 0 20px rgba(97, 218, 251, 0.3); }
-    to { box-shadow: 0 0 40px rgba(97, 218, 251, 0.5); }
+    from { box-shadow: 0 0 20px rgba(139, 0, 0, 0.4), inset 0 0 20px rgba(0, 0, 0, 0.6); }
+    to { box-shadow: 0 0 40px rgba(255, 0, 0, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.6); }
+  }
+  
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,20 Q40,80 80,30" stroke="rgba(139,0,0,0.1)" fill="none" stroke-width="1"/></svg>');
+    background-size: 120px 120px;
+    pointer-events: none;
+    opacity: 0.3;
+    z-index: -1;
   }
 `;
 
@@ -33,14 +47,31 @@ const Title = styled.h2`
   font-size: 2.2rem;
   margin-bottom: 1.2rem;
   color: ${props => {
-    if (props.isGameOver) return '#ff6b6b';
-    return props.isGoodEnding ? '#61dafb' : '#ff6b6b';
+    if (props.isGameOver) return '#ff0000';
+    return props.isGoodEnding ? '#ff3333' : '#8B0000';
   }};
   text-shadow: 0 0 10px ${props => {
-    if (props.isGameOver) return 'rgba(255, 107, 107, 0.7)';
-    return props.isGoodEnding ? 'rgba(97, 218, 251, 0.7)' : 'rgba(255, 107, 107, 0.7)';
+    if (props.isGameOver) return 'rgba(255, 0, 0, 0.7)';
+    return props.isGoodEnding ? 'rgba(255, 0, 0, 0.7)' : 'rgba(139, 0, 0, 0.7)';
   }};
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  font-family: 'Courier New', monospace;
+  position: relative;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: ${props => {
+      if (props.isGameOver) return 'linear-gradient(90deg, rgba(139, 0, 0, 0), rgba(255, 0, 0, 0.8), rgba(139, 0, 0, 0))';
+      return props.isGoodEnding ? 
+        'linear-gradient(90deg, rgba(139, 0, 0, 0), rgba(255, 51, 51, 0.8), rgba(139, 0, 0, 0))' : 
+        'linear-gradient(90deg, rgba(139, 0, 0, 0), rgba(139, 0, 0, 0.8), rgba(139, 0, 0, 0))';
+    }};
+  }
 `;
 
 const StatsContainer = styled.div`
@@ -48,10 +79,11 @@ const StatsContainer = styled.div`
   flex-direction: column;
   width: 100%;
   margin: 1.5rem 0;
-  background-color: rgba(30, 33, 39, 0.6);
-  border-radius: 8px;
+  background-color: rgba(20, 0, 0, 0.6);
+  border-radius: 0px;
   padding: 1.5rem;
-  border: 1px solid rgba(97, 218, 251, 0.2);
+  border: 1px solid rgba(139, 0, 0, 0.3);
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4);
 `;
 
 const StatRow = styled.div`
@@ -59,7 +91,7 @@ const StatRow = styled.div`
   justify-content: space-between;
   margin: 0.7rem 0;
   padding: 0.7rem;
-  border-bottom: 1px solid rgba(97, 218, 251, 0.2);
+  border-bottom: 1px solid rgba(139, 0, 0, 0.2);
   
   &:last-child {
     border-bottom: none;
@@ -68,13 +100,14 @@ const StatRow = styled.div`
 
 const StatLabel = styled.span`
   font-weight: bold;
-  color: #a0a0a0;
+  color: #a05050;
 `;
 
 const StatValue = styled.span`
-  color: #61dafb;
+  color: #ff0000;
   font-weight: bold;
-  text-shadow: 0 0 5px rgba(97, 218, 251, 0.3);
+  text-shadow: 0 0 5px rgba(139, 0, 0, 0.3);
+  font-family: 'Courier New', monospace;
 `;
 
 const Message = styled.p`
@@ -83,21 +116,22 @@ const Message = styled.p`
   margin: 1.2rem 0;
   line-height: 1.7;
   font-style: italic;
-  color: ${props => props.isGoodEnding ? '#a0e8af' : props.isGameOver ? '#a0a0a0' : '#ff9999'};
-  background-color: rgba(30, 33, 39, 0.4);
+  color: ${props => props.isGoodEnding ? '#ff9999' : props.isGameOver ? '#a05050' : '#8B0000'};
+  background-color: rgba(20, 0, 0, 0.4);
   padding: 1.2rem;
-  border-radius: 8px;
-  border: 1px solid rgba(97, 218, 251, 0.1);
+  border-radius: 0px;
+  border: 1px solid rgba(139, 0, 0, 0.2);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
 `;
 
 const Quote = styled.blockquote`
   font-style: italic;
   margin: 1.8rem 0;
   padding: 1rem 1.5rem;
-  border-left: 4px solid #61dafb;
+  border-left: 4px solid #8B0000;
   color: #d0d0d0;
-  background-color: rgba(30, 33, 39, 0.5);
-  border-radius: 0 8px 8px 0;
+  background-color: rgba(20, 0, 0, 0.5);
+  border-radius: 0px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   position: relative;
   
@@ -107,7 +141,7 @@ const Quote = styled.blockquote`
     top: 0;
     left: 12px;
     font-size: 3rem;
-    color: rgba(97, 218, 251, 0.2);
+    color: rgba(139, 0, 0, 0.2);
     line-height: 1;
   }
 `;
@@ -117,26 +151,27 @@ const Author = styled.cite`
   text-align: right;
   margin-top: 0.8rem;
   font-size: 1rem;
-  color: #61dafb;
+  color: #a05050;
 `;
 
 const Button = styled.button`
   padding: 14px 28px;
   font-size: 1.2rem;
   margin-top: 1.5rem;
-  background-color: rgba(97, 218, 251, 0.2);
-  color: #61dafb;
-  border: 2px solid #61dafb;
-  border-radius: 8px;
+  background-color: rgba(139, 0, 0, 0.2);
+  color: #ff0000;
+  border: 2px solid #8B0000;
+  border-radius: 0px;
   cursor: pointer;
   transition: all 0.3s ease;
   letter-spacing: 1px;
-  box-shadow: 0 0 10px rgba(97, 218, 251, 0.3);
+  box-shadow: 0 0 10px rgba(139, 0, 0, 0.3);
+  font-family: 'Courier New', monospace;
   
   &:hover {
-    background-color: rgba(97, 218, 251, 0.3);
+    background-color: rgba(139, 0, 0, 0.3);
     transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(97, 218, 251, 0.4);
+    box-shadow: 0 5px 15px rgba(255, 0, 0, 0.2);
   }
   
   &:active {
@@ -179,19 +214,19 @@ function EndScreen({ stats, onRestart }) {
     <EndContainer className="fade-in">
       <Title isGoodEnding={isGoodEnding} isGameOver={!isVictory}>
         {!isVictory 
-          ? "Game Over" 
+          ? "Your Demise" 
           : isGoodEnding 
-            ? "Transcendence Achieved" 
-            : "Corrupted Existence"
+            ? "Blood Ascension" 
+            : "Complete Corruption"
         }
       </Title>
       
       <Message isGoodEnding={isGoodEnding} isGameOver={!isVictory}>
         {!isVictory
-          ? "Your journey ended prematurely. The existential quest remains unfulfilled."
+          ? "Your journey ends in darkness. The abyss has claimed you."
           : isGoodEnding 
-            ? "You have navigated the existential maze with wisdom, choosing sustenance over decay."
-            : "Your choices have led you down a path of corruption. The rot has consumed you from within."
+            ? "You've mastered the darkness within, becoming something beyond mortal understanding."
+            : "The rot has consumed you entirely. Your soul is now a vessel of pure corruption."
         }
       </Message>
       
@@ -230,7 +265,7 @@ function EndScreen({ stats, onRestart }) {
       )}
       
       <Button onClick={onRestart}>
-        Begin Anew
+        Return to Darkness
       </Button>
     </EndContainer>
   );

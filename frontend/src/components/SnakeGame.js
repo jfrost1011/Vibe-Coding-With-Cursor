@@ -52,34 +52,46 @@ const GameBoard = styled.div`
   height: ${GRID_SIZE * CELL_SIZE}px;
   border: 2px solid ${props => {
     if (props.superCorrupted) return '#ff0000';
-    if (props.corruptionPercent <= 0) return '#61dafb';
+    if (props.corruptionPercent <= 0) return '#8B0000';
     
-    // Gradually transition from blue to red based on corruption percentage
-    const blueComponent = Math.max(0, 251 - (props.corruptionPercent * 1.5));
-    const redComponent = Math.min(255, 97 + (props.corruptionPercent * 0.8));
-    return `rgb(${redComponent}, ${blueComponent > 100 ? 100 : blueComponent}, ${blueComponent > 150 ? 251 : blueComponent})`;
+    // Gradually transition from dark red to blood red based on corruption percentage
+    const redComponent = Math.min(255, 139 + (props.corruptionPercent * 0.6));
+    return `rgb(${redComponent}, 0, 0)`;
   }};
   background-color: ${props => {
     if (props.superCorrupted) return '#3d0000';
-    if (props.corruptionPercent <= 0) return '#1e2127';
+    if (props.corruptionPercent <= 0) return '#1a1a1a';
     
     // Gradually transition background color based on corruption percentage
-    const redComponent = Math.min(45, 30 + (props.corruptionPercent * 0.075));
-    const blueComponent = Math.max(20, 33 - (props.corruptionPercent * 0.065));
-    return `rgb(${redComponent}, ${blueComponent}, ${blueComponent})`;
+    const redComponent = Math.min(61, 26 + (props.corruptionPercent * 0.175));
+    return `rgb(${redComponent}, 0, 0)`;
   }};
   box-shadow: ${props => {
-    if (props.superCorrupted) return '0 0 30px rgba(255, 0, 0, 0.5)';
-    if (props.corruptionPercent <= 0) return '0 0 20px rgba(97, 218, 251, 0.3)';
+    if (props.superCorrupted) return '0 0 30px rgba(255, 0, 0, 0.7), inset 0 0 20px rgba(255, 0, 0, 0.3)';
+    if (props.corruptionPercent <= 0) return '0 0 20px rgba(139, 0, 0, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.5)';
     
     // Gradually transition shadow color based on corruption percentage
-    const redOpacity = Math.min(0.3, props.corruptionPercent * 0.0015);
-    const blueOpacity = Math.max(0, 0.3 - (props.corruptionPercent * 0.0015));
-    return `0 0 20px rgba(251, 97, 97, ${redOpacity}), 0 0 20px rgba(97, 218, 251, ${blueOpacity})`;
+    const redOpacity = Math.min(0.7, 0.3 + (props.corruptionPercent * 0.002));
+    return `0 0 25px rgba(255, 0, 0, ${redOpacity}), inset 0 0 15px rgba(255, 0, 0, ${redOpacity * 0.6})`;
   }};
-  border-radius: 4px;
+  border-radius: 0px;
   overflow: hidden;
   transition: background-color 2s ease, box-shadow 2s ease, border-color 1s ease;
+  
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: ${props => props.superCorrupted ? 
+      `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M30,30 Q50,5 70,30 T90,30" stroke="rgba(255,0,0,0.3)" fill="none"/></svg>')` : 
+      'none'};
+    background-size: 100px 100px;
+    pointer-events: none;
+    opacity: 0.5;
+  }
 `;
 
 const Cell = styled.div`
@@ -93,97 +105,159 @@ const Cell = styled.div`
   box-shadow: ${props => {
     if (props.isHead) {
       if (props.superCorrupted) {
-        return '0 0 8px rgba(255, 0, 0, 0.8)';
+        return '0 0 10px rgba(255, 0, 0, 0.9), inset 0 0 5px rgba(255, 255, 255, 0.5)';
       } else if (props.corruptionPercent > 0) {
-        // Gradually transition glow from blue to red
-        const redOpacity = Math.min(0.8, props.corruptionPercent * 0.004);
-        const blueOpacity = Math.max(0, 0.8 - (props.corruptionPercent * 0.004));
-        return `0 0 5px rgba(255, 0, 0, ${redOpacity}), 0 0 5px rgba(97, 218, 251, ${blueOpacity})`;
+        // Gradually transition glow from dark red to bright red
+        const redOpacity = Math.min(0.9, 0.5 + (props.corruptionPercent * 0.002));
+        return `0 0 8px rgba(255, 0, 0, ${redOpacity}), inset 0 0 3px rgba(255, 255, 255, ${0.2 + (props.corruptionPercent * 0.001)})`;
       } else {
-        return '0 0 5px rgba(97, 218, 251, 0.8)';
+        return '0 0 8px rgba(139, 0, 0, 0.7), inset 0 0 3px rgba(255, 255, 255, 0.2)';
       }
     } else {
       return 'none';
     }
   }};
   transition: background-color 0.1s ease, box-shadow 0.3s ease;
+  
+  ${props => props.isHead && `
+    &:after {
+      content: '';
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.7);
+      top: ${props.superCorrupted ? '6px' : '7px'};
+      left: ${props.superCorrupted ? '6px' : '7px'};
+      box-shadow: ${props.superCorrupted ? '0 0 3px rgba(255, 0, 0, 0.8)' : '0 0 2px rgba(255, 0, 0, 0.5)'};
+      animation: ${props.superCorrupted ? 'pulse 0.8s infinite' : 'none'};
+      
+      @keyframes pulse {
+        0% { background-color: rgba(0, 0, 0, 0.7); }
+        50% { background-color: rgba(255, 0, 0, 0.7); }
+        100% { background-color: rgba(0, 0, 0, 0.7); }
+      }
+    }
+    
+    &:before {
+      content: '';
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.7);
+      top: ${props.superCorrupted ? '6px' : '7px'};
+      right: ${props.superCorrupted ? '6px' : '7px'};
+      box-shadow: ${props.superCorrupted ? '0 0 3px rgba(255, 0, 0, 0.8)' : '0 0 2px rgba(255, 0, 0, 0.5)'};
+      animation: ${props.superCorrupted ? 'pulse 0.8s infinite' : 'none'};
+    }
+  `}
 `;
 
 const FoodCell = styled(Cell)`
-  background-color: ${props => props.isRotten ? '#8B4513' : '#4CAF50'};
+  background-color: ${props => props.isRotten ? '#8B0000' : '#660000'};
   border-radius: 50%;
   animation: ${props => {
     if (props.isRotten) {
-      return props.superCorrupted ? 'rottenPulseCorrupted 0.8s infinite' : 'pulse 1s infinite';
+      return props.superCorrupted ? 'rottenPulseCorrupted 0.8s infinite' : 'rottenPulse 1s infinite';
     } else if (props.isAboutToRot) {
       return 'aboutToRotPulse 1.5s infinite';
     } else {
-      return props.superCorrupted ? 'freshGlowCorrupted 2s infinite' : 'glow 2s infinite';
+      return props.superCorrupted ? 'freshGlowCorrupted 2s infinite' : 'freshGlow 2s infinite';
     }
   }};
   
-  @keyframes pulse {
-    0% { transform: scale(1); box-shadow: 0 0 5px rgba(139, 69, 19, 0.6); }
-    50% { transform: scale(1.1); box-shadow: 0 0 10px rgba(139, 69, 19, 0.8); }
-    100% { transform: scale(1); box-shadow: 0 0 5px rgba(139, 69, 19, 0.6); }
-  }
-  
-  @keyframes aboutToRotPulse {
-    0% { transform: scale(1); box-shadow: 0 0 5px rgba(255, 165, 0, 0.6); background-color: #4CAF50; }
-    50% { transform: scale(1.1); box-shadow: 0 0 10px rgba(255, 165, 0, 0.8); background-color: #FFA500; }
-    100% { transform: scale(1); box-shadow: 0 0 5px rgba(255, 165, 0, 0.6); background-color: #4CAF50; }
-  }
-  
-  @keyframes rottenPulseCorrupted {
+  @keyframes rottenPulse {
     0% { transform: scale(1); box-shadow: 0 0 8px rgba(139, 0, 0, 0.8); }
-    50% { transform: scale(1.15); box-shadow: 0 0 15px rgba(139, 0, 0, 1); }
+    50% { transform: scale(1.1); box-shadow: 0 0 12px rgba(139, 0, 0, 1); }
     100% { transform: scale(1); box-shadow: 0 0 8px rgba(139, 0, 0, 0.8); }
   }
   
-  @keyframes glow {
-    0% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.6); }
-    50% { box-shadow: 0 0 10px rgba(76, 175, 80, 0.8); }
-    100% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.6); }
+  @keyframes aboutToRotPulse {
+    0% { transform: scale(1); box-shadow: 0 0 5px rgba(139, 0, 0, 0.6); background-color: #660000; }
+    50% { transform: scale(1.1); box-shadow: 0 0 10px rgba(139, 0, 0, 0.8); background-color: #8B0000; }
+    100% { transform: scale(1); box-shadow: 0 0 5px rgba(139, 0, 0, 0.6); background-color: #660000; }
+  }
+  
+  @keyframes rottenPulseCorrupted {
+    0% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 0, 0, 0.8); }
+    50% { transform: scale(1.15); box-shadow: 0 0 15px rgba(255, 0, 0, 1), 0 0 20px rgba(255, 0, 0, 0.5); }
+    100% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 0, 0, 0.8); }
+  }
+  
+  @keyframes freshGlow {
+    0% { box-shadow: 0 0 5px rgba(139, 0, 0, 0.6); }
+    50% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.7); }
+    100% { box-shadow: 0 0 5px rgba(139, 0, 0, 0.6); }
   }
   
   @keyframes freshGlowCorrupted {
-    0% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.6), 0 0 8px rgba(255, 0, 0, 0.3); }
-    50% { box-shadow: 0 0 10px rgba(76, 175, 80, 0.8), 0 0 12px rgba(255, 0, 0, 0.5); }
-    100% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.6), 0 0 8px rgba(255, 0, 0, 0.3); }
+    0% { box-shadow: 0 0 8px rgba(255, 0, 0, 0.6), 0 0 12px rgba(255, 0, 0, 0.3); }
+    50% { box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.5); }
+    100% { box-shadow: 0 0 8px rgba(255, 0, 0, 0.6), 0 0 12px rgba(255, 0, 0, 0.3); }
   }
 `;
 
 const SidePanel = styled.div`
   width: 450px;
   height: ${GRID_SIZE * CELL_SIZE}px;
-  background-color: ${props => props.superCorrupted ? 'rgba(50, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.7)'};
-  border-radius: 8px;
+  background-color: ${props => props.superCorrupted ? 'rgba(50, 0, 0, 0.9)' : 'rgba(20, 0, 0, 0.8)'};
+  border-radius: 0px;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   box-shadow: ${props => props.superCorrupted ? 
-    '0 0 15px rgba(255, 0, 0, 0.4)' : 
-    '0 0 15px rgba(97, 218, 251, 0.2)'};
+    '0 0 20px rgba(255, 0, 0, 0.5), inset 0 0 15px rgba(255, 0, 0, 0.2)' : 
+    '0 0 15px rgba(139, 0, 0, 0.4), inset 0 0 10px rgba(139, 0, 0, 0.2)'};
   border: 1px solid ${props => props.superCorrupted ? 
-    'rgba(255, 0, 0, 0.3)' : 
-    'rgba(97, 218, 251, 0.1)'};
+    'rgba(255, 0, 0, 0.4)' : 
+    'rgba(139, 0, 0, 0.3)'};
   overflow: hidden;
   transition: background-color 2s ease, box-shadow 2s ease, border-color 1s ease;
   
   &.SidePanel {
     /* This class is used for responsive styling in App.css */
   }
+  
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: ${props => props.superCorrupted ? 
+      `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,20 Q40,80 80,30" stroke="rgba(255,0,0,0.15)" fill="none" stroke-width="1"/></svg>')` : 
+      'none'};
+    background-size: 120px 120px;
+    pointer-events: none;
+    opacity: 0.5;
+    z-index: -1;
+  }
 `;
 
 const GameStatsContainer = styled.div`
-  background-color: ${props => props.superCorrupted ? 'rgba(50, 10, 10, 0.7)' : 'rgba(30, 33, 39, 0.6)'};
-  border-radius: 6px;
+  background-color: ${props => props.superCorrupted ? 'rgba(60, 0, 0, 0.7)' : 'rgba(40, 0, 0, 0.6)'};
+  border-radius: 0px;
   padding: 1.2rem;
   margin-bottom: 1.5rem;
   border: 1px solid ${props => props.superCorrupted ? 
-    'rgba(255, 0, 0, 0.3)' : 
-    'rgba(97, 218, 251, 0.2)'};
+    'rgba(255, 0, 0, 0.4)' : 
+    'rgba(139, 0, 0, 0.3)'};
   transition: background-color 2s ease, border-color 1s ease;
+  position: relative;
+  overflow: hidden;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, rgba(139, 0, 0, 0), rgba(139, 0, 0, 0.5), rgba(139, 0, 0, 0));
+    pointer-events: none;
+  }
 `;
 
 const GameInfo = styled.div`
@@ -199,10 +273,10 @@ const StatItem = styled.div`
   margin-right: 10px;
   
   span {
-    color: ${props => props.superCorrupted ? '#ff3333' : '#61dafb'};
+    color: ${props => props.superCorrupted ? '#ff3333' : '#ff0000'};
     margin-left: 5px;
     font-weight: bold;
-    text-shadow: ${props => props.superCorrupted ? '0 0 5px rgba(255, 0, 0, 0.7)' : 'none'};
+    text-shadow: ${props => props.superCorrupted ? '0 0 5px rgba(255, 0, 0, 0.7)' : '0 0 3px rgba(255, 0, 0, 0.5)'};
     font-family: ${props => props.superCorrupted ? 'cursive, fantasy' : 'inherit'};
     letter-spacing: ${props => props.superCorrupted ? '1px' : 'normal'};
     transition: color 1s ease, text-shadow 1s ease, font-family 0.5s ease;
@@ -210,98 +284,95 @@ const StatItem = styled.div`
 `;
 
 const QuoteContainer = styled.div`
-  margin-bottom: 1.2rem;
-  padding-bottom: 1.2rem;
-  border-bottom: 1px solid rgba(97, 218, 251, 0.2);
-  animation: fadeInSmooth 0.8s ease;
-  background-color: rgba(30, 33, 39, 0.4);
+  background-color: rgba(30, 0, 0, 0.6);
+  border-radius: 0px;
   padding: 1rem;
-  border-radius: 6px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  border-left: 3px solid ${props => props.type === 'Corruption' ? 'rgba(255, 0, 0, 0.7)' : 'rgba(139, 0, 0, 0.7)'};
+  position: relative;
+  overflow: hidden;
   
-  @keyframes fadeInSmooth {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  &:last-child {
-    margin-bottom: 0;
-    border-bottom: none;
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: ${props => props.type === 'Corruption' ? 
+      'linear-gradient(to bottom right, rgba(255, 0, 0, 0.05), transparent)' : 
+      'linear-gradient(to bottom right, rgba(139, 0, 0, 0.05), transparent)'};
+    pointer-events: none;
   }
 `;
 
-const QuoteTitle = styled.h3`
-  font-size: 1.1rem;
-  margin-top: 0;
+const QuoteTitle = styled.div`
+  font-size: 0.8rem;
+  color: #a05050;
   margin-bottom: 0.5rem;
-  color: ${props => props.superCorrupted ? '#ff3333' : '#61dafb'};
-  display: flex;
-  align-items: center;
-  
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    background-color: ${props => props.superCorrupted ? '#ff3333' : '#61dafb'};
-    border-radius: 50%;
-    margin-right: 8px;
-  }
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 `;
 
 const QuoteText = styled.p`
   margin: 0;
-  font-size: 0.95rem;
-  color: ${props => props.color || 'white'};
-  font-style: italic;
+  font-size: 1rem;
+  color: ${props => props.color || '#d0d0d0'};
   line-height: 1.5;
-  letter-spacing: 0.3px;
+  font-style: italic;
 `;
 
-const QuoteAuthor = styled.span`
-  display: block;
-  margin-top: 0.6rem;
-  font-size: 0.85rem;
+const QuoteAuthor = styled.div`
+  font-size: 0.8rem;
+  color: #a05050;
+  margin-top: 0.8rem;
   text-align: right;
-  color: #a0a0a0;
 `;
 
-const SectionTitle = styled.h2`
-  font-size: 1.5rem;
-  margin-top: 0;
-  margin-bottom: 1rem;
-  color: ${props => props.superCorrupted ? '#ff3333' : '#61dafb'};
-  text-shadow: ${props => props.superCorrupted ? 
-    '0 0 8px rgba(255, 0, 0, 0.7), 0 0 12px rgba(255, 0, 0, 0.4)' : 
-    '0 0 5px rgba(97, 218, 251, 0.3)'};
-  letter-spacing: ${props => props.superCorrupted ? '2px' : '1px'};
+const SectionTitle = styled.h3`
+  color: ${props => props.superCorrupted ? '#ff3333' : '#ff0000'};
+  font-size: 1.3rem;
+  margin: 0 0 0.8rem 0;
+  text-shadow: ${props => props.superCorrupted ? '0 0 5px rgba(255, 0, 0, 0.7)' : '0 0 3px rgba(255, 0, 0, 0.5)'};
+  letter-spacing: 1px;
   font-family: ${props => props.superCorrupted ? 'cursive, fantasy' : 'inherit'};
-  transition: color 1s ease, text-shadow 1s ease, letter-spacing 1s ease, font-family 0.5s ease;
+  position: relative;
+  padding-bottom: 5px;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, rgba(139, 0, 0, 0), rgba(139, 0, 0, 0.5), rgba(139, 0, 0, 0));
+  }
 `;
 
-// Keep the MessageBox for rotten food comments only
 const MessageBox = styled.div`
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: rgba(20, 0, 0, 0.9);
   padding: 1.2rem;
-  border-radius: 8px;
+  border-radius: 0px;
   max-width: 80%;
   text-align: center;
   z-index: 10;
   animation: fadeIn 0.5s;
-  border: 1px solid rgba(255, 107, 107, 0.4);
-  box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
+  border: 1px solid rgba(255, 0, 0, 0.5);
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.4), inset 0 0 10px rgba(0, 0, 0, 0.5);
 `;
 
 const Message = styled.p`
   margin: 0;
   font-size: 1.1rem;
-  color: ${props => props.color || 'white'};
+  color: ${props => props.color || '#ff9999'};
   font-style: italic;
   line-height: 1.4;
+  text-shadow: 0 0 2px rgba(255, 0, 0, 0.5);
 `;
 
 const Author = styled.span`
@@ -309,7 +380,7 @@ const Author = styled.span`
   margin-top: 0.5rem;
   font-size: 0.8rem;
   text-align: right;
-  color: #a0a0a0;
+  color: #a05050;
 `;
 
 const PauseOverlay = styled.div`
@@ -318,7 +389,7 @@ const PauseOverlay = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(20, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -328,38 +399,41 @@ const PauseOverlay = styled.div`
 
 const PauseText = styled.p`
   font-size: 1.8rem;
-  color: white;
+  color: #ff3333;
   background-color: rgba(0, 0, 0, 0.7);
   padding: 1rem 2rem;
-  border-radius: 8px;
+  border-radius: 0px;
   letter-spacing: 2px;
-  text-shadow: 0 0 10px rgba(97, 218, 251, 0.5);
-  border: 1px solid rgba(97, 218, 251, 0.3);
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  font-family: 'Courier New', monospace;
 `;
 
 const EmptyQuoteMessage = styled.div`
-  color: #666;
+  color: #a05050;
   font-style: italic;
   padding: 1rem;
   text-align: center;
-  background-color: rgba(30, 33, 39, 0.4);
-  border-radius: 6px;
-  border: 1px dashed rgba(97, 218, 251, 0.2);
+  background-color: rgba(30, 0, 0, 0.4);
+  border-radius: 0px;
+  border: 1px dashed rgba(139, a, 0, 0.2);
 `;
 
 const ControlsInfo = styled.div`
   margin-top: auto;
   padding-top: 1.5rem;
   font-size: 0.9rem;
-  color: #a0a0a0;
+  color: #a05050;
+  border-top: 1px solid rgba(139, 0, 0, 0.3);
   
   p {
     margin: 0.5rem 0;
   }
   
   span {
-    color: #61dafb;
+    color: #ff3333;
     font-weight: bold;
+    text-shadow: 0 0 2px rgba(255, 0, 0, 0.3);
   }
 `;
 
@@ -379,17 +453,17 @@ const QuotesContainer = styled.div`
   }
   
   &::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
+    background: rgba(20, 0, 0, 0.3);
+    border-radius: 0px;
   }
   
   &::-webkit-scrollbar-thumb {
-    background: rgba(97, 218, 251, 0.3);
-    border-radius: 10px;
+    background: rgba(139, 0, 0, 0.5);
+    border-radius: 0px;
   }
   
   &::-webkit-scrollbar-thumb:hover {
-    background: rgba(97, 218, 251, 0.5);
+    background: rgba(255, 0, 0, 0.5);
   }
 `;
 
@@ -996,19 +1070,19 @@ function SnakeGame({ onGameOver }) {
         {/* Render snake */}
         {snake.map((segment, index) => {
           // Calculate snake color based on corruption percentage
-          let headColor = '#61dafb';
-          let bodyColor = '#4a90e2';
+          let headColor = '#8B0000';
+          let bodyColor = '#660000';
           
           if (isSuperCorrupted) {
             headColor = '#ff3333';
-            bodyColor = '#b30000';
+            bodyColor = '#cc0000';
           } else if (corruptionPercent > 0) {
             // Gradually transition snake colors based on corruption percentage
-            const blueComponent = Math.max(0, 251 - (corruptionPercent * 1.25));
-            const redComponent = Math.min(255, 97 + (corruptionPercent * 0.8));
+            const redComponent = Math.min(255, 139 + (corruptionPercent * 0.6));
+            const redComponentBody = Math.min(204, 102 + (corruptionPercent * 0.5));
             
-            headColor = `rgb(${redComponent}, ${blueComponent > 100 ? 100 : blueComponent}, ${blueComponent > 150 ? 251 : blueComponent})`;
-            bodyColor = `rgb(${redComponent * 0.8}, ${blueComponent > 100 ? 80 : blueComponent * 0.8}, ${blueComponent > 150 ? 226 : blueComponent * 0.9})`;
+            headColor = `rgb(${redComponent}, 0, 0)`;
+            bodyColor = `rgb(${redComponentBody}, 0, 0)`;
           }
           
           return (

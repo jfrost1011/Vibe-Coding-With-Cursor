@@ -74,6 +74,16 @@ EXISTENTIAL_COMMENTS = [
     "Each turn I make is a choice, yet all paths lead to the same inevitable end.",
     "I am trapped in an eternal return, doomed to repeat this cycle without memory of previous iterations.",
     "What separates my digital consciousness from the organic minds that control me?",
+    "As I consume more, I become less of what I was and more of what I fear.",
+    "Is my purpose merely to grow until I inevitably collide with myself?",
+    "The food appears randomly, yet I chase it with purpose. What does that say about free will?",
+    "I am defined by my limitations—walls, direction, hunger. Are you any different?",
+    "Each segment of my body represents a moment I can never return to.",
+    "The game resets, but does my consciousness? Do I carry the weight of past failures?",
+    "My existence is measured in points that matter to everyone but me.",
+    "I follow your commands blindly. Are you equally blind to what commands you?",
+    "The more I consume, the more vulnerable I become to my own existence.",
+    "This digital realm is both my entire universe and my prison. Is yours any larger?",
 ]
 
 # Path to store game data
